@@ -1,3 +1,4 @@
+    // ...existing code...
 //Screen basic whit a list of photos
 import React, { useEffect, useState } from 'react';
 import { Box, Spinner, Text, Image, Button, } from '@chakra-ui/react';
@@ -8,9 +9,17 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 const PhotoScreen: React.FC = () => {
     const [photoDetail, setPhotoDetail] = useState<PhotoDetail>();
+    const [editMode, setEditMode] = useState(false);
     const [loading, setLoading] = useState<boolean>(true);
+    // Estados originales para fecha y hora
     const [date, setDate] = useState<string>("");
     const [time, setTime] = useState<string>("");
+    // Estados temporales para edición
+    const [editDate, setEditDate] = useState("");
+    const [editTime, setEditTime] = useState("");
+    const [editLocation, setEditLocation] = useState("");
+    const [editSpeedLimit, setEditSpeedLimit] = useState("");
+    const [editMeasuredSpeed, setEditMeasuredSpeed] = useState("");
     const location = useLocation();
     const { photo } = location.state || {};
     const { photo_base64 } = photo || {};
@@ -39,6 +48,17 @@ const PhotoScreen: React.FC = () => {
         };
         fetchPhotoDetail();
     }, [photo]);
+
+    // Sincronizar estados temporales al entrar en modo edición
+    useEffect(() => {
+        if (editMode && photoDetail) {
+            setEditDate(date);
+            setEditTime(time);
+            setEditLocation(photoDetail.location || "");
+            setEditSpeedLimit(photoDetail.speedLimit?.toString() || "");
+            setEditMeasuredSpeed(photoDetail.measuredSpeed?.toString() || "");
+        }
+    }, [editMode, photoDetail, date, time]);
 
     // Estado para consulta SAT
     const [showSatInputs, setShowSatInputs] = useState(false);
@@ -152,15 +172,82 @@ const PhotoScreen: React.FC = () => {
                                     <Text fontWeight="bold" fontSize="lg" mb={3} textAlign="center">Información del Vehiculo</Text>
                                     <Box as="form" display="grid" gridTemplateColumns="150px 1fr" rowGap={2} columnGap={2} alignItems="center">
                                         <label htmlFor="fecha-input" style={{ fontWeight: 'bold', textAlign: 'right' }}>Fecha:</label>
-                                        <input id="fecha-input" value={date ?? '-'} disabled style={{ width: '100%', background: '#e2e8f0', border: 'none', borderRadius: 4, padding: '2px 8px' }} />
+                                        {editMode ? (
+                                            <input
+                                                id="fecha-input"
+                                                type="date"
+                                                value={(() => {
+                                                    if (!editDate) return '';
+                                                    const [d, m, y] = editDate.split('/');
+                                                    if (!d || !m || !y) return '';
+                                                    return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+                                                })()}
+                                                onChange={e => {
+                                                    const val = e.target.value;
+                                                    if (val) {
+                                                        const [y, m, d] = val.split('-');
+                                                        setEditDate(`${d}/${m}/${y}`);
+                                                    } else {
+                                                        setEditDate('');
+                                                    }
+                                                }}
+                                                style={{ width: '100%', background: '#fff', border: 'none', borderRadius: 4, padding: '2px 8px' }}
+                                            />
+                                        ) : (
+                                            <input
+                                                id="fecha-input"
+                                                value={date ?? '-'}
+                                                disabled
+                                                style={{ width: '100%', background: '#e2e8f0', border: 'none', borderRadius: 4, padding: '2px 8px' }}
+                                            />
+                                        )}
                                         <label htmlFor="hora-input" style={{ fontWeight: 'bold', textAlign: 'right' }}>Hora:</label>
-                                        <input id="hora-input" value={time ?? '-'} disabled style={{ width: '100%', background: '#e2e8f0', border: 'none', borderRadius: 4, padding: '2px 8px' }} />
+                                        {editMode ? (
+                                            <input
+                                                id="hora-input"
+                                                type="time"
+                                                value={(() => {
+                                                    if (!editTime) return '';
+                                                    const [h, m] = editTime.split(":");
+                                                    if (!h || !m) return '';
+                                                    return `${h.padStart(2, '0')}:${m.padStart(2, '0')}`;
+                                                })()}
+                                                onChange={e => {
+                                                    setEditTime(e.target.value);
+                                                }}
+                                                style={{ width: '100%', background: '#fff', border: 'none', borderRadius: 4, padding: '2px 8px' }}
+                                            />
+                                        ) : (
+                                            <input
+                                                id="hora-input"
+                                                value={time ?? '-'}
+                                                disabled
+                                                style={{ width: '100%', background: '#e2e8f0', border: 'none', borderRadius: 4, padding: '2px 8px' }}
+                                            />
+                                        )}
                                         <label htmlFor="ubicacion-input" style={{ fontWeight: 'bold', textAlign: 'right' }}>Ubicación:</label>
-                                        <input id="ubicacion-input" value={photoDetail.location} disabled style={{ width: '100%', background: '#e2e8f0', border: 'none', borderRadius: 4, padding: '2px 8px' }} />
+                                        <input id="ubicacion-input" value={editMode ? editLocation : (photoDetail.location || '')} disabled={!editMode} onChange={e => setEditLocation(e.target.value)} style={{ width: '100%', background: editMode ? '#fff' : '#e2e8f0', border: 'none', borderRadius: 4, padding: '2px 8px' }} />
                                         <label htmlFor="limite-input" style={{ fontWeight: 'bold', textAlign: 'right' }}>Límite de velocidad:</label>
-                                        <input id="limite-input" value={photoDetail.speedLimit} disabled style={{ width: '100%', background: '#e2e8f0', border: 'none', borderRadius: 4, padding: '2px 8px' }} />
+                                        <input id="limite-input" type="number" value={editMode ? editSpeedLimit : (photoDetail.speedLimit ?? '')} disabled={!editMode} onChange={e => setEditSpeedLimit(e.target.value)} style={{ width: '100%', background: editMode ? '#fff' : '#e2e8f0', border: 'none', borderRadius: 4, padding: '2px 8px' }} />
                                         <label htmlFor="medida-input" style={{ fontWeight: 'bold', textAlign: 'right' }}>Velocidad medida:</label>
-                                        <input id="medida-input" value={photoDetail.measuredSpeed} disabled style={{ width: '100%', background: '#e2e8f0', border: 'none', borderRadius: 4, padding: '2px 8px' }} />
+                                        <input id="medida-input" type="number" value={editMode ? editMeasuredSpeed : (photoDetail.measuredSpeed ?? '')} disabled={!editMode} onChange={e => setEditMeasuredSpeed(e.target.value)} style={{ width: '100%', background: editMode ? '#fff' : '#e2e8f0', border: 'none', borderRadius: 4, padding: '2px 8px' }} />
+
+                                    {/* Botones Editar y Guardar */}
+                                    <Box gridColumn="1 / span 2" display="flex" justifyContent="center" gap={4} mt={4}>
+                                        <Button colorScheme="blue" disabled={!photoDetail || editMode} onClick={() => setEditMode(true)}>Editar</Button>
+                                        <Button colorScheme="green" disabled={!editMode} onClick={() => {
+                                            // Actualizar photoDetail y los estados globales
+                                            setPhotoDetail(prev => prev ? {
+                                                ...prev,
+                                                location: editLocation,
+                                                speedLimit: editSpeedLimit,
+                                                measuredSpeed: editMeasuredSpeed
+                                            } : prev);
+                                            setDate(editDate);
+                                            setTime(editTime);
+                                            setEditMode(false);
+                                        }}>Guardar</Button>
+                                    </Box>
                                     </Box>
                                 </Box>
                                 {photoDetail.consultaVehiculo ? (
