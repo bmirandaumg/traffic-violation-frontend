@@ -25,11 +25,11 @@ const PhotoScreen: React.FC = () => {
             try {
                 const detail = await PhotosService.getById(photo.id);
                 setPhotoDetail(detail);
-                // Extraer fecha y hora si es posible
+                // Extraer fecha y hora correctamente desde un string ISO
                 if (detail.timestamp) {
-                    const [fecha, hora] = detail.timestamp.split(' ');
-                    setDate(fecha || "");
-                    setTime(hora || "");
+                    const dateObj = new Date(detail.timestamp);
+                    setDate(dateObj.toLocaleDateString('es-ES'));
+                    setTime(dateObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
                 }
             } catch (error) {
                 console.error("Error al obtener el detalle de la foto:", error);
@@ -148,29 +148,45 @@ const PhotoScreen: React.FC = () => {
                     <Box flex={1} display="flex" flexDirection="column" gap={4}>
                         {photoDetail && (
                             <>
-                                <Box p={2} borderWidth={1} borderRadius={8} bg="#f8f9fa" color="black">
-                                    <Text fontWeight='bold'>Fecha:</Text>
-                                    <Text>{date ?? '-'}</Text>
-                                    <Text fontWeight='bold' mt={2}>Hora:</Text>
-                                    <Text>{time ?? '-'}</Text>
-                                    <Text fontWeight='bold' mt={2}>Ubicación:</Text>
-                                    <Text>{photoDetail.location}</Text>
-                                    <Text fontWeight='bold' mt={2}>Límite de velocidad:</Text>
-                                    <Text>{photoDetail.speedLimit}</Text>
-                                    <Text fontWeight='bold' mt={2}>Velocidad medida:</Text>
-                                    <Text>{photoDetail.measuredSpeed}</Text>
+                                <Box p={2} borderWidth={1} borderRadius={8} bg="#f8f9fa" color="black" maxWidth="1200px" minWidth="400px" mx="auto">
+                                    <Text fontWeight="bold" fontSize="lg" mb={3} textAlign="center">Información del Vehiculo</Text>
+                                    <Box as="form" display="grid" gridTemplateColumns="150px 1fr" rowGap={2} columnGap={2} alignItems="center">
+                                        <label htmlFor="fecha-input" style={{ fontWeight: 'bold', textAlign: 'right' }}>Fecha:</label>
+                                        <input id="fecha-input" value={date ?? '-'} disabled style={{ width: '100%', background: '#e2e8f0', border: 'none', borderRadius: 4, padding: '2px 8px' }} />
+                                        <label htmlFor="hora-input" style={{ fontWeight: 'bold', textAlign: 'right' }}>Hora:</label>
+                                        <input id="hora-input" value={time ?? '-'} disabled style={{ width: '100%', background: '#e2e8f0', border: 'none', borderRadius: 4, padding: '2px 8px' }} />
+                                        <label htmlFor="ubicacion-input" style={{ fontWeight: 'bold', textAlign: 'right' }}>Ubicación:</label>
+                                        <input id="ubicacion-input" value={photoDetail.location} disabled style={{ width: '100%', background: '#e2e8f0', border: 'none', borderRadius: 4, padding: '2px 8px' }} />
+                                        <label htmlFor="limite-input" style={{ fontWeight: 'bold', textAlign: 'right' }}>Límite de velocidad:</label>
+                                        <input id="limite-input" value={photoDetail.speedLimit} disabled style={{ width: '100%', background: '#e2e8f0', border: 'none', borderRadius: 4, padding: '2px 8px' }} />
+                                        <label htmlFor="medida-input" style={{ fontWeight: 'bold', textAlign: 'right' }}>Velocidad medida:</label>
+                                        <input id="medida-input" value={photoDetail.measuredSpeed} disabled style={{ width: '100%', background: '#e2e8f0', border: 'none', borderRadius: 4, padding: '2px 8px' }} />
+                                    </Box>
                                 </Box>
                                 {photoDetail.consultaVehiculo ? (
-                                    <Box p={2} borderWidth={1} borderRadius={8} bg="#f8f9fa" color="black">
-                                        <Text fontWeight='bold'>Vehículo:</Text>
-                                        <Text>TIPO: {photoDetail.consultaVehiculo.TIPO}</Text>
-                                        <Text>MARCA: {photoDetail.consultaVehiculo.MARCA}</Text>
-                                        <Text>LINEA: {photoDetail.consultaVehiculo.LINEA}</Text>
-                                        <Text>MODELO: {photoDetail.consultaVehiculo.MODELO}</Text>
-                                        <Text>COLOR: {photoDetail.consultaVehiculo.COLOR}</Text>
-                                        <Text>USO: {photoDetail.consultaVehiculo.USO}</Text>
-                                        <Text>PLACA: {photoDetail.consultaVehiculo.PLACA}</Text>
-                                        <Text>CC: {photoDetail.consultaVehiculo.CC}</Text>
+                                    <Box p={2} borderWidth={1} borderRadius={8} bg="#f8f9fa" color="black" maxWidth="1200px" minWidth="400px" mx="auto">
+                                        <Text fontWeight='bold' fontSize="lg" mb={3} textAlign="center" color="#22543d">Resultado SAT</Text>
+                                        <Box as="dl" display="grid" gridTemplateColumns="180px 1fr" alignItems="center" borderRadius={8} overflow="hidden">
+                                            {[
+                                                { label: 'Tipo', value: photoDetail.consultaVehiculo.TIPO },
+                                                { label: 'Marca', value: photoDetail.consultaVehiculo.MARCA },
+                                                { label: 'Línea', value: photoDetail.consultaVehiculo.LINEA },
+                                                { label: 'Modelo', value: photoDetail.consultaVehiculo.MODELO },
+                                                { label: 'Color', value: photoDetail.consultaVehiculo.COLOR },
+                                                { label: 'Uso', value: photoDetail.consultaVehiculo.USO },
+                                                { label: 'Placa', value: photoDetail.consultaVehiculo.PLACA },
+                                                { label: 'CC', value: photoDetail.consultaVehiculo.CC },
+                                            ].map((item, idx) => (
+                                                <React.Fragment key={item.label}>
+                                                    <Box as="dt" fontWeight="bold" textAlign="right" px={2} py={2} bg={idx % 2 === 0 ? '#38a169' : 'transparent'} color={idx % 2 === 0 ? 'white' : '#22543d'}>
+                                                        {item.label}:
+                                                    </Box>
+                                                    <Box as="dd" px={2} py={2} bg={idx % 2 === 0 ? '#38a169' : 'transparent'} color={idx % 2 === 0 ? 'white' : '#22543d'}>
+                                                        {item.value}
+                                                    </Box>
+                                                </React.Fragment>
+                                            ))}
+                                        </Box>
                                     </Box>
                                 ) : photoDetail.isSatVehicleInfoFound === false && showSatError && !showSatInputs ? (
                                     <Box 
