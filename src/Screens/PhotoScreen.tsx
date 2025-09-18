@@ -138,7 +138,7 @@ const PhotoScreen: React.FC = () => {
                             </Box>
                         )}
                         <Box width="100%" display="flex" flexDirection={{ base: 'column', md: 'row' }} gap={2} mt={4} justifyContent="center" alignItems="center">
-                            <Button color="white" variant='outline' bg='#5cb85c' onClick={processPhoto}>
+                            <Button color="white" variant='outline' bg='#5cb85c' onClick={processPhoto} disabled={editMode}>
                                 Procesar
                             </Button>
                             <Button 
@@ -156,10 +156,11 @@ const PhotoScreen: React.FC = () => {
                                         return newValue;
                                     });
                                 }}
+                                disabled={editMode}
                             >
                                 Realizar Consulta en Sat
                             </Button>
-                            <Button color="white" variant='outline' bg='#dc3545'>
+                            <Button color="white" variant='outline' bg='#dc3545' disabled={editMode}>
                                 Descartar
                             </Button>
                         </Box>
