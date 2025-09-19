@@ -1,10 +1,10 @@
-    // ...existing code...
 //Screen basic whit a list of photos
 import React, { useEffect, useState } from 'react';
 import { Box, Spinner, Text, Image, Button, } from '@chakra-ui/react';
 
 import { PhotosService, type PhotoDetail, type Vehicle } from '@/services/photos.service';
 import { VehicleService } from '@/services/vehicle.service';
+import { CruiseService, type Cruise } from '@/services/cruise.service';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 const PhotoScreen: React.FC = () => {
@@ -15,15 +15,18 @@ const PhotoScreen: React.FC = () => {
     const [date, setDate] = useState<string>("");
     const [time, setTime] = useState<string>("");
     // Estados temporales para edición
-    const [editDate, setEditDate] = useState("");
-    const [editTime, setEditTime] = useState("");
-    const [editLocation, setEditLocation] = useState("");
-    const [editSpeedLimit, setEditSpeedLimit] = useState("");
-    const [editMeasuredSpeed, setEditMeasuredSpeed] = useState("");
+    const [editDate, setEditDate] = useState(() => toInputDateFormat(date));
+    const [editTime, setEditTime] = useState(time || '');
+    const [editLocation, setEditLocation] = useState(photoDetail?.location || '');
+    const [editSpeedLimit, setEditSpeedLimit] = useState(photoDetail?.speedLimit || '');
+    const [editMeasuredSpeed, setEditMeasuredSpeed] = useState(photoDetail?.measuredSpeed || '');
+    const [showValidation, setShowValidation] = useState(false);
     const location = useLocation();
     const { photo } = location.state || {};
     const { photo_base64 } = photo || {};
     const navigate = useNavigate();
+
+    const [cruises, setCruises] = useState<Cruise[]>([]);
 
     useEffect(() => {
         const fetchPhotoDetail = async () => {
@@ -49,14 +52,27 @@ const PhotoScreen: React.FC = () => {
         fetchPhotoDetail();
     }, [photo]);
 
+    // Cargar cruceros al montar el componente
+    useEffect(() => {
+      const fetchCruises = async () => {
+        try {
+          const data = await CruiseService.get();
+          setCruises(data);
+        } catch (error) {
+          console.error('Error cargando cruceros:', error);
+        }
+      };
+      fetchCruises();
+    }, []);
+
     // Sincronizar estados temporales al entrar en modo edición
     useEffect(() => {
         if (editMode && photoDetail) {
-            setEditDate(date);
-            setEditTime(time);
-            setEditLocation(photoDetail.location || "");
-            setEditSpeedLimit(photoDetail.speedLimit?.toString() || "");
-            setEditMeasuredSpeed(photoDetail.measuredSpeed?.toString() || "");
+            setEditDate(toInputDateFormat(date));
+            setEditTime(time || '');
+            setEditLocation(photoDetail.location || '');
+            setEditSpeedLimit(photoDetail.speedLimit || '');
+            setEditMeasuredSpeed(photoDetail.measuredSpeed || '');
         }
     }, [editMode, photoDetail, date, time]);
 
@@ -108,8 +124,24 @@ const PhotoScreen: React.FC = () => {
         }
     };
 
-
-
+    // Utilidad para convertir dd/mm/yyyy a yyyy-mm-dd
+    function toInputDateFormat(dateStr: string) {
+        if (!dateStr) return '';
+        const parts = dateStr.split('/');
+        if (parts.length === 3) {
+            return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+        }
+        return dateStr;
+    }
+    // Utilidad para convertir yyyy-mm-dd a dd/mm/yyyy
+    function toDisplayDateFormat(dateStr: string) {
+        if (!dateStr) return '';
+        const parts = dateStr.split('-');
+        if (parts.length === 3) {
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+        return dateStr;
+    }
 
     return (
         <Box p={4} backgroundColor="white" minH="100vh" color="black">
@@ -175,31 +207,16 @@ const PhotoScreen: React.FC = () => {
                                         <label htmlFor="fecha-input" style={{ fontWeight: 'bold', textAlign: 'right' }}>Fecha:</label>
                                         {editMode ? (
                                             <input
-                                                id="fecha-input"
                                                 type="date"
-                                                value={(() => {
-                                                    if (!editDate) return '';
-                                                    const [d, m, y] = editDate.split('/');
-                                                    if (!d || !m || !y) return '';
-                                                    return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
-                                                })()}
-                                                onChange={e => {
-                                                    const val = e.target.value;
-                                                    if (val) {
-                                                        const [y, m, d] = val.split('-');
-                                                        setEditDate(`${d}/${m}/${y}`);
-                                                    } else {
-                                                        setEditDate('');
-                                                    }
-                                                }}
-                                                style={{ width: '100%', background: '#fff', border: 'none', borderRadius: 4, padding: '2px 8px' }}
+                                                value={editDate}
+                                                onChange={e => setEditDate(e.target.value)}
+                                                style={{ flex: 1, background: '#fff', border: showValidation && !editDate ? '2px solid #e53e3e' : '1px solid #cbd5e1', borderRadius: 6, padding: '2px 12px', fontSize: 16 }}
                                             />
                                         ) : (
                                             <input
-                                                id="fecha-input"
-                                                value={date ?? '-'}
+                                                value={date || ''}
                                                 disabled
-                                                style={{ width: '100%', background: '#e2e8f0', border: 'none', borderRadius: 4, padding: '2px 8px' }}
+                                                style={{ flex: 1, background: '#e2e8f0', border: '1px solid #cbd5e1', borderRadius: 6, padding: '2px 12px', fontSize: 16 }}
                                             />
                                         )}
                                         <label htmlFor="hora-input" style={{ fontWeight: 'bold', textAlign: 'right' }}>Hora:</label>
@@ -207,36 +224,80 @@ const PhotoScreen: React.FC = () => {
                                             <input
                                                 id="hora-input"
                                                 type="time"
-                                                value={(() => {
-                                                    if (!editTime) return '';
-                                                    const [h, m] = editTime.split(":");
-                                                    if (!h || !m) return '';
-                                                    return `${h.padStart(2, '0')}:${m.padStart(2, '0')}`;
-                                                })()}
-                                                onChange={e => {
-                                                    setEditTime(e.target.value);
-                                                }}
-                                                style={{ width: '100%', background: '#fff', border: 'none', borderRadius: 4, padding: '2px 8px' }}
+                                                value={editTime}
+                                                onChange={e => setEditTime(e.target.value)}
+                                                style={{ flex: 1, background: '#fff', border: showValidation && !editTime ? '2px solid #e53e3e' : '1px solid #cbd5e1', borderRadius: 6, padding: '2px 12px', fontSize: 16 }}
                                             />
                                         ) : (
                                             <input
                                                 id="hora-input"
-                                                value={time ?? '-'}
+                                                value={time || ''}
+                                                disabled
+                                                style={{ flex: 1, background: '#e2e8f0', border: '1px solid #cbd5e1', borderRadius: 6, padding: '2px 12px', fontSize: 16 }}
+                                            />
+                                        )}
+                                        <label htmlFor="ubicacion-input" style={{ fontWeight: 'bold', textAlign: 'right' }}>Ubicación:</label>
+                                        {editMode ? (
+                                            <select
+                                                value={editLocation}
+                                                onChange={e => setEditLocation(e.target.value)}
+                                                style={{ flex: 1, background: '#fff', border: showValidation && !editLocation ? '2px solid #e53e3e' : '1px solid #cbd5e1', borderRadius: 6, padding: '2px 12px', fontSize: 16 }}
+                                            >
+                                                <option value="">Seleccione un crucero</option>
+                                                {cruises.map(c => (
+                                                  <option key={c.id} value={c.cruise_name}>{c.cruise_name}</option>
+                                                ))}
+                                            </select>
+                                        ) : (
+                                            <input
+                                                value={photoDetail?.location || ''}
+                                                disabled
+                                                style={{ flex: 1, background: '#e2e8f0', border: '1px solid #cbd5e1', borderRadius: 6, padding: '2px 12px', fontSize: 16 }}
+                                            />
+                                        )}
+                                        <label htmlFor="limite-input" style={{ fontWeight: 'bold', textAlign: 'right' }}>Límite de velocidad:</label>
+                                        {editMode ? (
+                                            <input
+                                                id="limite-input"
+                                                type="number"
+                                                value={editSpeedLimit}
+                                                onChange={e => setEditSpeedLimit(e.target.value)}
+                                                style={{ width: '100%', background: '#fff', border: showValidation && !editSpeedLimit ? '2px solid #e53e3e' : '1px solid #cbd5e1', borderRadius: 4, padding: '2px 8px' }}
+                                            />
+                                        ) : (
+                                            <input
+                                                id="limite-input"
+                                                value={photoDetail.speedLimit ?? ''}
                                                 disabled
                                                 style={{ width: '100%', background: '#e2e8f0', border: 'none', borderRadius: 4, padding: '2px 8px' }}
                                             />
                                         )}
-                                        <label htmlFor="ubicacion-input" style={{ fontWeight: 'bold', textAlign: 'right' }}>Ubicación:</label>
-                                        <input id="ubicacion-input" value={editMode ? editLocation : (photoDetail.location || '')} disabled={!editMode} onChange={e => setEditLocation(e.target.value)} style={{ width: '100%', background: editMode ? '#fff' : '#e2e8f0', border: 'none', borderRadius: 4, padding: '2px 8px' }} />
-                                        <label htmlFor="limite-input" style={{ fontWeight: 'bold', textAlign: 'right' }}>Límite de velocidad:</label>
-                                        <input id="limite-input" type="number" value={editMode ? editSpeedLimit : (photoDetail.speedLimit ?? '')} disabled={!editMode} onChange={e => setEditSpeedLimit(e.target.value)} style={{ width: '100%', background: editMode ? '#fff' : '#e2e8f0', border: 'none', borderRadius: 4, padding: '2px 8px' }} />
                                         <label htmlFor="medida-input" style={{ fontWeight: 'bold', textAlign: 'right' }}>Velocidad medida:</label>
-                                        <input id="medida-input" type="number" value={editMode ? editMeasuredSpeed : (photoDetail.measuredSpeed ?? '')} disabled={!editMode} onChange={e => setEditMeasuredSpeed(e.target.value)} style={{ width: '100%', background: editMode ? '#fff' : '#e2e8f0', border: 'none', borderRadius: 4, padding: '2px 8px' }} />
+                                        {editMode ? (
+                                            <input
+                                                id="medida-input"
+                                                type="number"
+                                                value={editMeasuredSpeed}
+                                                onChange={e => setEditMeasuredSpeed(e.target.value)}
+                                                style={{ width: '100%', background: '#fff', border: showValidation && !editMeasuredSpeed ? '2px solid #e53e3e' : '1px solid #cbd5e1', borderRadius: 4, padding: '2px 8px' }}
+                                            />
+                                        ) : (
+                                            <input
+                                                id="medida-input"
+                                                value={photoDetail.measuredSpeed ?? ''}
+                                                disabled
+                                                style={{ width: '100%', background: '#e2e8f0', border: 'none', borderRadius: 4, padding: '2px 8px' }}
+                                            />
+                                        )}
 
                                     {/* Botones Editar y Guardar */}
                                     <Box gridColumn="1 / span 2" display="flex" justifyContent="center" gap={4} mt={4}>
                                         <Button colorScheme="blue" disabled={!photoDetail || editMode} onClick={() => setEditMode(true)}>Editar</Button>
                                         <Button colorScheme="green" disabled={!editMode} onClick={() => {
+                                            if (!editDate || !editTime || !editLocation || !editSpeedLimit || !editMeasuredSpeed) {
+                                                setShowValidation(true);
+                                                return;
+                                            }
                                             // Actualizar photoDetail y los estados globales
                                             setPhotoDetail(prev => prev ? {
                                                 ...prev,
@@ -244,9 +305,10 @@ const PhotoScreen: React.FC = () => {
                                                 speedLimit: editSpeedLimit,
                                                 measuredSpeed: editMeasuredSpeed
                                             } : prev);
-                                            setDate(editDate);
+                                            setDate(toDisplayDateFormat(editDate));
                                             setTime(editTime);
                                             setEditMode(false);
+                                            setShowValidation(false);
                                         }}>Guardar</Button>
                                     </Box>
                                     </Box>
