@@ -341,24 +341,36 @@ const PhotoScreen: React.FC = () => {
 
                                     {/* Botones Editar y Guardar */}
                                     <Box gridColumn="1 / span 2" display="flex" justifyContent="center" gap={4} mt={4}>
-                                        <Button colorScheme="blue" disabled={!photoDetail || editMode} onClick={() => setEditMode(true)}>Editar</Button>
-                                        <Button colorScheme="green" disabled={!editMode} onClick={() => {
-                                            if (!editDate || !editTime || !editLocation || !editSpeedLimit || !editMeasuredSpeed) {
-                                                setShowValidation(true);
-                                                return;
-                                            }
-                                            // Actualizar photoDetail y los estados globales
-                                            setPhotoDetail(prev => prev ? {
-                                                ...prev,
-                                                location: editLocation,
-                                                speedLimit: editSpeedLimit,
-                                                measuredSpeed: editMeasuredSpeed
-                                            } : prev);
-                                            setDate(toDisplayDateFormat(editDate));
-                                            setTime(editTime);
-                                            setEditMode(false);
-                                            setShowValidation(false);
-                                        }}>Guardar</Button>
+                                        <Button 
+                                            colorScheme="blue" 
+                                            bg="#3182ce" 
+                                            color="white" 
+                                            disabled={!photoDetail || editMode} 
+                                            onClick={() => setEditMode(true)}
+                                        >Editar</Button>
+                                        <Button 
+                                            colorScheme="green" 
+                                            bg="#38a169" 
+                                            color="white" 
+                                            disabled={!editMode} 
+                                            onClick={() => {
+                                                if (!editDate || !editTime || !editLocation || !editSpeedLimit || !editMeasuredSpeed) {
+                                                    setShowValidation(true);
+                                                    return;
+                                                }
+                                                // Actualizar photoDetail y los estados globales
+                                                setPhotoDetail(prev => prev ? {
+                                                    ...prev,
+                                                    location: editLocation,
+                                                    speedLimit: editSpeedLimit,
+                                                    measuredSpeed: editMeasuredSpeed
+                                                } : prev);
+                                                setDate(toDisplayDateFormat(editDate));
+                                                setTime(editTime);
+                                                setEditMode(false);
+                                                setShowValidation(false);
+                                            }}
+                                        >Guardar</Button>
                                     </Box>
                                     </Box>
                                 </Box>
@@ -415,19 +427,23 @@ const PhotoScreen: React.FC = () => {
                                                 placeholder="Placa"
                                                 value={satPlaca}
                                                 onChange={e => setSatPlaca(e.target.value)}
-                                                style={{ padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
+                                                style={{ padding: 8, borderRadius: 4, border: '1px solid #ccc', background: '#fff', color: '#222' }}
                                             />
                                             <input
                                                 placeholder="Tipo"
                                                 value={satTipo}
                                                 onChange={e => setSatTipo(e.target.value)}
-                                                style={{ padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
+                                                style={{ padding: 8, borderRadius: 4, border: '1px solid #ccc', background: '#fff', color: '#222' }}
                                             />
-                                            <Button color="white" variant='outline' bg='#343a40' onClick={handleSatSearch}>
+                                            <Button color="white" variant='outline' bg='#38a169' onClick={handleSatSearch}>
                                                 Buscar
                                             </Button>
                                         </Box>
-                                        {satError && <Text color="red.500" mt={2}>{satError}</Text>}
+                                        {satError && (
+                                            <Text color="red.500" mt={2} textAlign="center">
+                                                {satError}
+                                            </Text>
+                                        )}
                                     </>
                                 )}
                             </>
