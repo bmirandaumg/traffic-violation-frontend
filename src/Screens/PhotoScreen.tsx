@@ -222,7 +222,7 @@ const PhotoScreen: React.FC = () => {
                                         return newValue;
                                     });
                                 }}
-                                disabled={editMode}
+                                disabled={editMode || showSatInputs}
                             >
                                 Realizar Consulta en Sat
                             </Button>
@@ -362,7 +362,8 @@ const PhotoScreen: React.FC = () => {
                                     </Box>
                                     </Box>
                                 </Box>
-                                {photoDetail.consultaVehiculo ? (
+                                {/* Mostrar el recuadro verde solo si no está activa la consulta manual */}
+                                {photoDetail.consultaVehiculo && !showSatInputs ? (
                                     <Box p={2} borderWidth={1} borderRadius={8} bg="#f8f9fa" color="black" maxWidth="1200px" minWidth="400px" mx="auto">
                                         <Text fontWeight='bold' fontSize="lg" mb={3} textAlign="center" color="#22543d">Resultado SAT</Text>
                                         <Box as="dl" display="grid" gridTemplateColumns="180px 1fr" alignItems="center" borderRadius={8} overflow="hidden">
@@ -432,17 +433,30 @@ const PhotoScreen: React.FC = () => {
                             </>
                         )}
                         {satVehicle && (
-                            <Box mt={2} p={3} borderWidth={1} borderRadius={8} bg="#f8f9fa" color="black">
-                                <Text fontWeight='bold'>Resultado SAT:</Text>
-                                <Text>ESTADO: {satVehicle.ESTADO}</Text>
-                                <Text>PLACA: {satVehicle.PLACA}</Text>
-                                <Text>MARCA: {satVehicle.MARCA}</Text>
-                                <Text>LINEA: {satVehicle.LINEA}</Text>
-                                <Text>MODELO: {satVehicle.MODELO}</Text>
-                                <Text>COLOR: {satVehicle.COLOR}</Text>
-                                <Text>TIPO: {satVehicle.TIPO}</Text>
-                                <Text>USO: {satVehicle.USO}</Text>
-                                <Text>CC: {satVehicle.CC}</Text>
+                            <Box mt={2} p={2} borderWidth={1} borderRadius={8} bg="#f8f9fa" color="black" maxWidth="1200px" minWidth="400px" mx="auto">
+                                <Text fontWeight='bold' fontSize="lg" mb={3} textAlign="center" color="#22543d">Resultado SAT</Text>
+                                <Box as="dl" display="grid" gridTemplateColumns="180px 1fr" alignItems="center" borderRadius={8} overflow="hidden">
+                                    {[ 
+                                        { label: 'Estado', value: satVehicle.ESTADO },
+                                        { label: 'Placa', value: satVehicle.PLACA },
+                                        { label: 'Marca', value: satVehicle.MARCA },
+                                        { label: 'Línea', value: satVehicle.LINEA },
+                                        { label: 'Modelo', value: satVehicle.MODELO },
+                                        { label: 'Color', value: satVehicle.COLOR },
+                                        { label: 'Tipo', value: satVehicle.TIPO },
+                                        { label: 'Uso', value: satVehicle.USO },
+                                        { label: 'CC', value: satVehicle.CC },
+                                    ].map((item, idx) => (
+                                        <React.Fragment key={item.label}>
+                                            <Box as="dt" fontWeight="bold" textAlign="right" px={2} py={2} bg={idx % 2 === 0 ? '#38a169' : 'transparent'} color={idx % 2 === 0 ? 'white' : '#22543d'}>
+                                                {item.label}:
+                                            </Box>
+                                            <Box as="dd" px={2} py={2} bg={idx % 2 === 0 ? '#38a169' : 'transparent'} color={idx % 2 === 0 ? 'white' : '#22543d'}>
+                                                {item.value}
+                                            </Box>
+                                        </React.Fragment>
+                                    ))}
+                                </Box>
                             </Box>
                         )}
                     </Box>
