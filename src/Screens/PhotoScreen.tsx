@@ -41,7 +41,7 @@ const PhotoScreen: React.FC = () => {
                 if (detail.timestamp) {
                     const dateObj = new Date(detail.timestamp);
                     setDate(dateObj.toLocaleDateString('es-ES'));
-                    setTime(dateObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+                    setTime(getUTCTimeWithSecondsFromISO(detail.timestamp));
                 }
             } catch (error) {
                 console.error("Error al obtener el detalle de la foto:", error);
@@ -69,7 +69,7 @@ const PhotoScreen: React.FC = () => {
     useEffect(() => {
         if (editMode && photoDetail) {
             setEditDate(toInputDateFormat(date));
-            setEditTime(time || '');
+            setEditTime(getUTCTimeWithSecondsFromISO(photoDetail.timestamp));
             setEditLocation(photoDetail.location || '');
             setEditSpeedLimit(photoDetail.speedLimit || '');
             setEditMeasuredSpeed(photoDetail.measuredSpeed || '');
@@ -141,6 +141,15 @@ const PhotoScreen: React.FC = () => {
             return `${parts[2]}/${parts[1]}/${parts[0]}`;
         }
         return dateStr;
+    }
+    // Utilidad para extraer hora UTC en formato HH:mm:ss
+    function getUTCTimeWithSecondsFromISO(isoStr: string) {
+      if (!isoStr) return '';
+      const date = new Date(isoStr);
+      const hh = String(date.getUTCHours()).padStart(2, '0');
+      const mm = String(date.getUTCMinutes()).padStart(2, '0');
+      const ss = String(date.getUTCSeconds()).padStart(2, '0');
+      return `${hh}:${mm}:${ss}`;
     }
 
     return (
@@ -224,6 +233,7 @@ const PhotoScreen: React.FC = () => {
                                             <input
                                                 id="hora-input"
                                                 type="time"
+                                                step="1"
                                                 value={editTime}
                                                 onChange={e => setEditTime(e.target.value)}
                                                 style={{ flex: 1, background: '#fff', border: showValidation && !editTime ? '2px solid #e53e3e' : '1px solid #cbd5e1', borderRadius: 6, padding: '2px 12px', fontSize: 16 }}
