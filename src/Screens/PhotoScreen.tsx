@@ -74,7 +74,7 @@ const PhotoScreen: React.FC = () => {
             setEditSpeedLimit(photoDetail.speedLimit || '');
             setEditMeasuredSpeed(photoDetail.measuredSpeed || '');
         }
-    }, [editMode, photoDetail, date, time]);
+    }, [editMode, photoDetail, date]);
 
     // Estado para consulta SAT
     const [showSatInputs, setShowSatInputs] = useState(false);
@@ -150,6 +150,31 @@ const PhotoScreen: React.FC = () => {
       const mm = String(date.getUTCMinutes()).padStart(2, '0');
       const ss = String(date.getUTCSeconds()).padStart(2, '0');
       return `${hh}:${mm}:${ss}`;
+    }
+
+    // Utilidad para mostrar la hora bajo el input siempre en 24h
+    function normalizeTo24HourFormat(timeStr: string) {
+      const trimmed = timeStr.trim();
+      if (!trimmed) return '';
+
+      const match = trimmed.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?$/i);
+      if (!match) {
+        return trimmed;
+      }
+
+      let hour = parseInt(match[1] ?? '0', 10);
+      const minutes = match[2] ?? '00';
+      const seconds = match[3] ?? '00';
+      const period = match[4]?.toLowerCase();
+
+      if (period === 'pm' && hour < 12) {
+        hour += 12;
+      } else if (period === 'am' && hour === 12) {
+        hour = 0;
+      }
+
+      const normalizedHour = String(hour).padStart(2, '0');
+      return `${normalizedHour}:${minutes}:${seconds}`;
     }
 
     return (
@@ -230,21 +255,35 @@ const PhotoScreen: React.FC = () => {
                                         )}
                                         <label htmlFor="hora-input" style={{ fontWeight: 'bold', textAlign: 'right' }}>Hora:</label>
                                         {editMode ? (
-                                            <input
-                                                id="hora-input"
-                                                type="time"
-                                                step="1"
-                                                value={editTime}
-                                                onChange={e => setEditTime(e.target.value)}
-                                                style={{ flex: 1, background: '#fff', border: showValidation && !editTime ? '2px solid #e53e3e' : '1px solid #cbd5e1', borderRadius: 6, padding: '2px 12px', fontSize: 16 }}
-                                            />
+                                            <Box display="flex" flexDirection="column">
+                                                <input
+                                                    id="hora-input"
+                                                    type="time"
+                                                    step="1"
+                                                    value={editTime}
+                                                    onChange={e => setEditTime(e.target.value)}
+                                                    style={{ flex: 1, background: '#fff', border: showValidation && !editTime ? '2px solid #e53e3e' : '1px solid #cbd5e1', borderRadius: 6, padding: '2px 12px', fontSize: 16 }}
+                                                />
+                                                {editTime && (
+                                                    <Text fontSize="sm" color="gray.600" mt={1}>
+                                                        Formato 24h: {normalizeTo24HourFormat(editTime)}
+                                                    </Text>
+                                                )}
+                                            </Box>
                                         ) : (
-                                            <input
-                                                id="hora-input"
-                                                value={time || ''}
-                                                disabled
-                                                style={{ flex: 1, background: '#e2e8f0', border: '1px solid #cbd5e1', borderRadius: 6, padding: '2px 12px', fontSize: 16 }}
-                                            />
+                                            <Box display="flex" flexDirection="column">
+                                                <input
+                                                    id="hora-input"
+                                                    value={getUTCTimeWithSecondsFromISO(photoDetail?.timestamp || '')}
+                                                    disabled
+                                                    style={{ flex: 1, background: '#e2e8f0', border: '1px solid #cbd5e1', borderRadius: 6, padding: '2px 12px', fontSize: 16 }}
+                                                />
+                                                {photoDetail?.timestamp && (
+                                                    <Text fontSize="sm" color="gray.600" mt={1}>
+                                                        Formato 24h: {getUTCTimeWithSecondsFromISO(photoDetail.timestamp)}
+                                                    </Text>
+                                                )}
+                                            </Box>
                                         )}
                                         <label htmlFor="ubicacion-input" style={{ fontWeight: 'bold', textAlign: 'right' }}>Ubicación:</label>
                                         {editMode ? (
