@@ -204,13 +204,14 @@ const PhotoScreen: React.FC = () => {
                             </Box>
                         )}
                         <Box width="100%" display="flex" flexDirection={{ base: 'column', md: 'row' }} gap={2} mt={4} justifyContent="center" alignItems="center">
-                            <Button color="white" variant='outline' bg='#5cb85c' onClick={processPhoto} disabled={editMode}>
+                            <Button color="white" variant='outline' _hover={{ bg: '#4cae4f' }} bg='#5cb85c' onClick={processPhoto} disabled={editMode}>
                                 Procesar
                             </Button>
                             <Button 
                                 color="white" 
                                 variant='outline' 
                                 bg='#007bff' 
+                                _hover={{ bg: '#0056b3' }}
                                 onClick={() => {
                                     setShowSatInputs(v => {
                                         const newValue = !v;
@@ -226,7 +227,7 @@ const PhotoScreen: React.FC = () => {
                             >
                                 Realizar Consulta en Sat
                             </Button>
-                            <Button color="white" variant='outline' bg='#dc3545' disabled={editMode}>
+                            <Button color="white" variant='outline' _hover={{ bg: '#c82333' }} bg='#dc3545' disabled={editMode}>
                                 Descartar
                             </Button>
                         </Box>
@@ -306,7 +307,7 @@ const PhotoScreen: React.FC = () => {
                                         )}
                                         <label htmlFor="limite-input" style={{ fontWeight: 'bold', textAlign: 'right' }}>Límite de velocidad:</label>
                                         {editMode ? (
-                                            <input
+                                            <input 
                                                 id="limite-input"
                                                 type="number"
                                                 value={editSpeedLimit}
@@ -342,15 +343,17 @@ const PhotoScreen: React.FC = () => {
                                     {/* Botones Editar y Guardar */}
                                     <Box gridColumn="1 / span 2" display="flex" justifyContent="center" gap={4} mt={4}>
                                         <Button 
-                                            colorScheme="blue" 
-                                            bg="#3182ce" 
-                                            color="white" 
-                                            disabled={!photoDetail || editMode} 
+                                            colorScheme="blue"
+                                            bg="#007bff"
+                                            color="white"
+                                            _hover={{ bg: "#0056b3" }}
+                                            disabled={!photoDetail || editMode}
                                             onClick={() => setEditMode(true)}
                                         >Editar</Button>
                                         <Button 
                                             colorScheme="green" 
                                             bg="#38a169" 
+                                            _hover={{ bg: "#2f8b5b" }}
                                             color="white" 
                                             disabled={!editMode} 
                                             onClick={() => {
@@ -435,7 +438,7 @@ const PhotoScreen: React.FC = () => {
                                                 onChange={e => setSatTipo(e.target.value)}
                                                 style={{ padding: 8, borderRadius: 4, border: '1px solid #ccc', background: '#fff', color: '#222' }}
                                             />
-                                            <Button color="white" variant='outline' bg='#38a169' onClick={handleSatSearch}>
+                                            <Button color="white" variant='outline' _hover={{ bg: '#2f855a' }} bg='#38a169' onClick={handleSatSearch}>
                                                 Buscar
                                             </Button>
                                         </Box>
