@@ -18,6 +18,10 @@ export type Vehicle = {
   CC: string
 }
 
+export type PlatePart = {
+  lpType: string,
+  lpNumber: string
+}
 
 export type PhotoDetail = {
   id: number,
@@ -28,7 +32,8 @@ export type PhotoDetail = {
   videoNumber: number,
   serialNumber: number,
   measuredSpeed: string,
-  isSatVehicleInfoFound: boolean
+  isSatVehicleInfoFound: boolean,
+  plate_parts: PlatePart | null,
 }
 
  type ProcessPhotoRequest=
@@ -62,12 +67,19 @@ export const PhotosService = {
   getById: async (id: string): Promise<PhotoDetail> => {
     const { data } = await api.get(`/photos/${id}`);
     console.log(data);
-  return { id: data.id, ...data.photo_info, consultaVehiculo: data.consultaVehiculo, isSatVehicleInfoFound: data.isSatVehicleInfoFound };
+  return { id: data.id, ...data.photo_info, consultaVehiculo: data.consultaVehiculo, isSatVehicleInfoFound: data.isSatVehicleInfoFound, plate_parts: data.plate_parts };
   },
   processPhoto: async (params:ProcessPhotoRequest) => {
 
-    const { data } =  await api.post(`/processed-photo/send-speed-event`, params);
-    return data;
+    console.log('[processPhoto] Enviando parámetros:', params);
+    try {
+      const { data } = await api.post(`/processed-photo/send-speed-event`, params);
+      console.log('[processPhoto] Respuesta recibida:', data);
+      return data;
+    } catch (error) {
+      console.error('[processPhoto] Error al procesar la foto:', error);
+      throw error;
+    }
   },
 
 

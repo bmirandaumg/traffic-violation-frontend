@@ -11,6 +11,8 @@ const PhotoScreen: React.FC = () => {
     const [photoDetail, setPhotoDetail] = useState<PhotoDetail>();
     const [editMode, setEditMode] = useState(false);
     const [loading, setLoading] = useState<boolean>(true);
+    // Estado para habilitar/deshabilitar el botón Procesar en modo SAT
+    const [canProcessSat, setCanProcessSat] = useState(false);
     // Estados originales para fecha y hora
     const [date, setDate] = useState<string>("");
     const [time, setTime] = useState<string>("");
@@ -85,32 +87,67 @@ const PhotoScreen: React.FC = () => {
     const [showSatError, setShowSatError] = useState<boolean>(true);
 
     const handleSatSearch = async () => {
-        setSatError("");
-        setShowSatError(true);
-        setSatVehicle(null);
+    setSatError("");
+    setShowSatError(true);
+    setSatVehicle(null);
+    setCanProcessSat(false); // Deshabilitar procesar hasta que la consulta sea exitosa
         try {
             const vehicle = await VehicleService.consultarVehiculo(satPlaca, satTipo);
             if (vehicle && vehicle.PLACA) {
                 setSatVehicle(vehicle);
+                setCanProcessSat(true); // Habilitar procesar si la consulta fue exitosa
             } else {
                 setSatError("No se encontró información para los datos ingresados.");
+                setCanProcessSat(false);
             }
         } catch (error) {
             setSatError("Error consultando el servicio SAT.");
+            setCanProcessSat(false);
         }
     };
+
+    function getDateTimeFromForm(dateStr: string, timeStr: string): Date {
+        // Acepta dateStr en formatos dd/mm/yyyy ó yyyy-mm-dd y timeStr en HH:mm[:ss]
+        if (!dateStr || !timeStr) return new Date();
+
+        let day: string, month: string, year: string;
+        if (dateStr.includes('/')) { // dd/mm/yyyy
+            const parts = dateStr.split('/');
+            if (parts.length !== 3) return new Date();
+            [day, month, year] = parts;
+        } else if (dateStr.includes('-')) { // yyyy-mm-dd
+            const parts = dateStr.split('-');
+            if (parts.length !== 3) return new Date();
+            [year, month, day] = parts;
+        } else {
+            return new Date();
+        }
+
+        const timeParts = timeStr.split(':');
+        if (timeParts.length < 2) return new Date();
+        const [hours, minutes, seconds = '00'] = timeParts;
+
+        return new Date(Date.UTC(
+            Number(year),
+            Number(month) - 1,
+            Number(day),
+            Number(hours),
+            Number(minutes),
+            Number(seconds)
+        ));
+    }
 
     const processPhoto = async () => {
         if (!photoDetail || !photoDetail.consultaVehiculo || !photo) return;
         setLoading(true);
         try {
             const params = {
-                cruise: photo.cruise || "", // Ajusta si tienes el dato correcto
-                timestamp: photoDetail.timestamp ? new Date(photoDetail.timestamp) : new Date(),
+                cruise: photoDetail.location || "",
+                timestamp: getDateTimeFromForm(date, time),
                 speed_limit_kmh: Number(photoDetail.speedLimit) || 0,
                 current_speed_kmh: Number(photoDetail.measuredSpeed) || 0,
-                lpNumber: photo.cruise || "", // Ajusta si tienes el dato correcto
-                lpType: photoDetail.consultaVehiculo.TIPO,
+                lpNumber: photoDetail.plate_parts?.lpNumber || "",
+                lpType: photoDetail.plate_parts?.lpType || "",
                 photoId: photoDetail.id
             };
             const data = await PhotosService.processPhoto(params);
@@ -204,7 +241,14 @@ const PhotoScreen: React.FC = () => {
                             </Box>
                         )}
                         <Box width="100%" display="flex" flexDirection={{ base: 'column', md: 'row' }} gap={2} mt={4} justifyContent="center" alignItems="center">
-                            <Button color="white" variant='outline' _hover={{ bg: '#4cae4f' }} bg='#5cb85c' onClick={processPhoto} disabled={editMode}>
+                            <Button 
+                                color="white" 
+                                variant='outline' 
+                                _hover={{ bg: '#4cae4f' }} 
+                                bg='#5cb85c' 
+                                onClick={processPhoto} 
+                                disabled={editMode || (showSatInputs ? !canProcessSat : false)}
+                            >
                                 Procesar
                             </Button>
                             <Button 
@@ -275,13 +319,13 @@ const PhotoScreen: React.FC = () => {
                                             <Box display="flex" flexDirection="column">
                                                 <input
                                                     id="hora-input"
-                                                    value={getUTCTimeWithSecondsFromISO(photoDetail?.timestamp || '')}
+                                                    value={time}
                                                     disabled
                                                     style={{ flex: 1, background: '#e2e8f0', border: '1px solid #cbd5e1', borderRadius: 6, padding: '2px 12px', fontSize: 16 }}
                                                 />
-                                                {photoDetail?.timestamp && (
+                                                {time && (
                                                     <Text fontSize="sm" color="gray.600" mt={1}>
-                                                        Formato 24h: {getUTCTimeWithSecondsFromISO(photoDetail.timestamp)}
+                                                        Formato 24h: {normalizeTo24HourFormat(time)}
                                                     </Text>
                                                 )}
                                             </Box>
@@ -361,15 +405,17 @@ const PhotoScreen: React.FC = () => {
                                                     setShowValidation(true);
                                                     return;
                                                 }
-                                                // Actualizar photoDetail y los estados globales
+                                                const isoTimestamp = getDateTimeFromForm(editDate, editTime).toISOString();
+                                                // Actualizar photoDetail y los estados globales (incluyendo timestamp)
                                                 setPhotoDetail(prev => prev ? {
                                                     ...prev,
+                                                    timestamp: isoTimestamp,
                                                     location: editLocation,
                                                     speedLimit: editSpeedLimit,
                                                     measuredSpeed: editMeasuredSpeed
                                                 } : prev);
-                                                setDate(toDisplayDateFormat(editDate));
-                                                setTime(editTime);
+                                                setDate(toDisplayDateFormat(editDate)); // Guardamos formato dd/mm/yyyy
+                                                setTime(editTime); // Guardamos la hora HH:mm:ss
                                                 setEditMode(false);
                                                 setShowValidation(false);
                                             }}
