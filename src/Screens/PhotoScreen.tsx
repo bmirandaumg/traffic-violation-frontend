@@ -1,6 +1,6 @@
 //Screen basic whit a list of photos
 import React, { useEffect, useState } from 'react';
-import { Box, Spinner, Text, Image, Button, } from '@chakra-ui/react';
+import { Box, Spinner, Text, Image, Button, CloseButton } from '@chakra-ui/react';
 
 import { PhotosService, type PhotoDetail, type Vehicle } from '@/services/photos.service';
 import { VehicleService } from '@/services/vehicle.service';
@@ -8,6 +8,9 @@ import { CruiseService, type Cruise } from '@/services/cruise.service';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 const PhotoScreen: React.FC = () => {
+    // Estado para mostrar alerta de error de conexión
+    const [showProcessError, setShowProcessError] = useState(false);
+    const [processErrorMsg, setProcessErrorMsg] = useState('');
     const [photoDetail, setPhotoDetail] = useState<PhotoDetail>();
     const [editMode, setEditMode] = useState(false);
     const [loading, setLoading] = useState<boolean>(true);
@@ -137,6 +140,19 @@ const PhotoScreen: React.FC = () => {
         ));
     }
 
+    const handleDeletePhoto = async (id: number) => {
+        if (!photoDetail || !photoDetail.id) return;
+        setLoading(true);
+        try {
+            await PhotosService.deletePhoto(id);
+            navigate("/photos");
+        } catch (error) {
+            console.error("Error deleting photo:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const processPhoto = async () => {
         if (!photoDetail || !photoDetail.consultaVehiculo || !photo) return;
         setLoading(true);
@@ -152,10 +168,16 @@ const PhotoScreen: React.FC = () => {
             };
             const data = await PhotosService.processPhoto(params);
             console.log(data);
-            if (data.status === "processed")
+            if (data.status === "processed") {
                 navigate("/photos");
+            } else {
+                setProcessErrorMsg('No se pudo procesar la foto. Intenta nuevamente.');
+                setShowProcessError(true);
+            }
         } catch (error) {
             console.error("Error processing photo:", error);
+            setProcessErrorMsg('No hay conexión con el servicio o ocurrió un error.');
+            setShowProcessError(true);
         } finally {
             setLoading(false);
         }
@@ -219,6 +241,23 @@ const PhotoScreen: React.FC = () => {
             <Text fontSize="2xl" mb={4} fontWeight="bold">
                 Foto
             </Text>
+            {showProcessError && (
+                <Box 
+                    background="#fff5f5" 
+                    border="1px solid #feb2b2" 
+                    color="#c53030" 
+                    borderRadius={8} 
+                    mb={4} 
+                    p={4} 
+                    position="relative"
+                    display="flex"
+                    alignItems="center"
+                >
+                    <Box fontWeight="bold" fontSize="lg" mr={2}>Error de conexión</Box>
+                    <Box flex="1">{processErrorMsg}</Box>
+                    <CloseButton position="absolute" right="8px" top="8px" onClick={() => setShowProcessError(false)} />
+                </Box>
+            )}
             {loading ? (
                 <Spinner size="xl" />
             ) : (
@@ -271,7 +310,13 @@ const PhotoScreen: React.FC = () => {
                             >
                                 Realizar Consulta en Sat
                             </Button>
-                            <Button color="white" variant='outline' _hover={{ bg: '#c82333' }} bg='#dc3545' disabled={editMode}>
+                            <Button 
+                            color="white"
+                            variant='outline' 
+                            onClick={() => handleDeletePhoto(photoDetail!.id)}
+                            _hover={{ bg: '#c82333' }} 
+                            bg='#dc3545' 
+                            disabled={editMode}>
                                 Descartar
                             </Button>
                         </Box>
