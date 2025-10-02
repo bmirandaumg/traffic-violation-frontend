@@ -1,6 +1,7 @@
 // src/components/MasterPage.tsx
 import React from "react";
 import { Box, Flex, Image, Text, VStack, Button } from "@chakra-ui/react";
+import {FaUser} from "react-icons/fa";
 
 
 
@@ -12,8 +13,7 @@ const Header: React.FC = () => {
     }
     // Datos de usuario simulados
     const userName = localStorage.getItem("userEmail") || "";
-    const userCode = localStorage.getItem("userName") || "";
-    const profilePhotoUrl = "https://w7.pngwing.com/pngs/612/280/png-transparent-customer-user-userphoto-account-person-glyphs-icon-thumbnail.png"; // Reemplaza con la URL real de la foto de perfil
+    const userCode = localStorage.getItem("userName") || "";// Reemplaza con la URL real de la foto de perfil
   return (
     <Box position="relative" h="200px" w="100%">
     {/* Background Image */}
@@ -44,17 +44,18 @@ const Header: React.FC = () => {
       borderRadius={"md"}
       padding={2}
     >
-      <Image
-        src={profilePhotoUrl}
-        alt="Profile"
-        borderRadius="full"
-        boxSize="60px"
-        mr={4}
-      />
+      <FaUser size={60} style={{ marginRight: "16px", borderRadius: "50%", color:"#83D00D"   }} />
       <VStack gap={0} align="flex-start">
         <Text fontWeight="bold">{userName}</Text>
         <Text fontSize="sm">{userCode}</Text>
-        <Button colorScheme="red" size="sm" mt={2} onClick={handleLogout}>
+        <Button 
+        bg="#83D00D"
+        color="white"
+        size="sm"
+        mt={2}
+        onClick={handleLogout}
+        _hover={{ bg: "#6bb300" }}
+        >
           Cerrar sesión
         </Button>
       </VStack>

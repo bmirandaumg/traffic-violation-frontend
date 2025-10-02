@@ -14,6 +14,7 @@ const PhotoScreen: React.FC = () => {
     const [photoDetail, setPhotoDetail] = useState<PhotoDetail>();
     const [editMode, setEditMode] = useState(false);
     const [loading, setLoading] = useState<boolean>(true);
+    const [unblockError, setUnblockError] = useState<string | null>(null);
     // Estado para habilitar/deshabilitar el botón Procesar en modo SAT
     const [canProcessSat, setCanProcessSat] = useState(false);
     // Estados originales para fecha y hora
@@ -148,6 +149,20 @@ const PhotoScreen: React.FC = () => {
             navigate("/photos");
         } catch (error) {
             console.error("Error deleting photo:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleUnblockAndReturn = async () => {
+        setLoading(true);
+        setUnblockError(null);
+        try {
+            await PhotosService.unBlockPhoto(photoDetail!.id);
+        navigate("/photos");
+        } catch (error) {
+            console.error("Ocurrió un error al liberar la foto", error);
+            setUnblockError("Error al liberar la foto");
         } finally {
             setLoading(false);
         }
@@ -319,7 +334,21 @@ const PhotoScreen: React.FC = () => {
                             disabled={editMode}>
                                 Descartar
                             </Button>
+                            <Button 
+                            color="white"
+                            variant="outline"
+                            bg="#83D00D"
+                            _hover={{ bg: "#6bb300" }}
+                            onClick={handleUnblockAndReturn}
+                            >
+                                Regresar
+                            </Button>
                         </Box>
+                        {unblockError && (
+                        <Text color="red.500" mt={2} textAlign="center">
+                        {unblockError}
+                        </Text>
+                        )}
                     </Box>
                     {/* Columna derecha: Datos y vehículo */}
                     <Box flex={1} display="flex" flexDirection="column" gap={4}>
@@ -518,15 +547,15 @@ const PhotoScreen: React.FC = () => {
                                     <>
                                         <Box mt={4} mb={2} display="flex" flexDirection={{ base: 'column', md: 'row' }} gap={2} alignItems="center" justifyContent="center">
                                             <input
-                                                placeholder="Placa"
-                                                value={satPlaca}
-                                                onChange={e => setSatPlaca(e.target.value)}
-                                                style={{ padding: 8, borderRadius: 4, border: '1px solid #ccc', background: '#fff', color: '#222' }}
-                                            />
-                                            <input
                                                 placeholder="Tipo"
                                                 value={satTipo}
                                                 onChange={e => setSatTipo(e.target.value)}
+                                                style={{ padding: 8, borderRadius: 4, border: '1px solid #ccc', background: '#fff', color: '#222' }}
+                                            />
+                                            <input
+                                                placeholder="Placa"
+                                                value={satPlaca}
+                                                onChange={e => setSatPlaca(e.target.value)}
                                                 style={{ padding: 8, borderRadius: 4, border: '1px solid #ccc', background: '#fff', color: '#222' }}
                                             />
                                             <Button color="white" variant='outline' _hover={{ bg: '#2f855a' }} bg='#38a169' onClick={handleSatSearch}>

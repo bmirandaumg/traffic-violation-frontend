@@ -54,8 +54,14 @@ const PhotosScreen: React.FC = () => {
         , []);
 
 
-    const onPressPhoto = (photo: Photo) => {
+    const onPressPhoto = async (photo: Photo) => {
+        try {
+        await PhotosService.blockPhoto(photo.id);
         navigate("/photo" , { state: { photo } });
+        } catch (error) {
+            console.error("Error bloqueando la foto:", error);
+            // Puedes mostrar un mensaje de error si lo deseas
+        }
     }
 
     return (
@@ -116,7 +122,7 @@ const PhotosScreen: React.FC = () => {
                             />
                         </Field.Root>
 
-                        <Button alignSelf='flex-end' bg='#5cb85c' color='white'
+                        <Button alignSelf='flex-end' bg='#83D00D' color='white' _hover={{ bg: "#4cae4c" }}
                             onClick={() => fetchPhotos(parseInt(selectedCruise), date, 1)}
                         >Obtener fotos</Button>
 

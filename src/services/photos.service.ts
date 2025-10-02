@@ -69,6 +69,10 @@ export const PhotosService = {
     const { data } = await api.patch(`/photos/${id}/take`);
     return data;
   },
+  unBlockPhoto: async (id: number) => {
+    const { data } = await api.patch(`/photos/${id}/release`);
+    return data;
+  },
   getById: async (id: string): Promise<PhotoDetail> => {
     const { data } = await api.get(`/photos/${id}`);
     console.log(data);

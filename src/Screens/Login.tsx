@@ -54,7 +54,7 @@ const LoginScreen: React.FC = () => {
       >
         <Box bg="black" p={8} rounded="lg" shadow="md" w="sm">
           <Heading mb={6} size="lg" textAlign="center">
-            Login
+            Inicio de Sesión
           </Heading>
           <form onSubmit={handleSubmit}>
             <VStack gap={4} align="stretch" as="div">
