@@ -1,14 +1,18 @@
 // src/components/MasterPage.tsx
 import React from "react";
-import { Box, Flex, Image, Text, VStack } from "@chakra-ui/react";
+import { Box, Flex, Image, Text, VStack, Button } from "@chakra-ui/react";
 
 
 
 const Header: React.FC = () => {
 
+    const handleLogout = () => {
+      localStorage.clear();
+      window.location.href = "/"; // Redirige al usuario a la página de inicio
+    }
     // Datos de usuario simulados
-    const userName = "Bryan Miranda";
-    const userCode = "JD123";
+    const userName = localStorage.getItem("userEmail") || "";
+    const userCode = localStorage.getItem("userName") || "";
     const profilePhotoUrl = "https://w7.pngwing.com/pngs/612/280/png-transparent-customer-user-userphoto-account-person-glyphs-icon-thumbnail.png"; // Reemplaza con la URL real de la foto de perfil
   return (
     <Box position="relative" h="200px" w="100%">
@@ -35,7 +39,10 @@ const Header: React.FC = () => {
       top={4}
       right={4}
       align="center"
-      color="white"
+      color="black"
+      backgroundColor={"whiteAlpha.800"}
+      borderRadius={"md"}
+      padding={2}
     >
       <Image
         src={profilePhotoUrl}
@@ -47,6 +54,9 @@ const Header: React.FC = () => {
       <VStack gap={0} align="flex-start">
         <Text fontWeight="bold">{userName}</Text>
         <Text fontSize="sm">{userCode}</Text>
+        <Button colorScheme="red" size="sm" mt={2} onClick={handleLogout}>
+          Cerrar sesión
+        </Button>
       </VStack>
     </Flex>
   </Box>

@@ -11,8 +11,8 @@ const MasterPage: React.FC<MasterPageProps> = ({
 }) => {
 
     // Datos de usuario simulados
-    const userName = "Bryan Miranda";
-    const userCode = "JD123";
+    const userName = localStorage.getItem("userEmail") || "";
+    const userCode = localStorage.getItem("userName") || "";
     const profilePhotoUrl = "https://w7.pngwing.com/pngs/612/280/png-transparent-customer-user-userphoto-account-person-glyphs-icon-thumbnail.png"; // Reemplaza con la URL real de la foto de perfil
   return (
     <Box minH="100vh" bg="gray.50">
@@ -54,6 +54,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
             <Text fontWeight="bold">{userName}</Text>
             <Text fontSize="sm">{userCode}</Text>
           </VStack>
+          
         </Flex>
       </Box>
 

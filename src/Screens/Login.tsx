@@ -30,6 +30,8 @@ const LoginScreen: React.FC = () => {
       const response = await AuthService.login(payload);
 
       localStorage.setItem("accessToken", response.access_token);
+      localStorage.setItem("userEmail", response.email);
+      localStorage.setItem("userName", response.username);
 
       navigate("/photos");
     } catch (err) {
