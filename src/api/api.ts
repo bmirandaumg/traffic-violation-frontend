@@ -16,10 +16,24 @@ api.interceptors.request.use((config) => {
 });
 
 // Interceptor de response (manejo de errores global)
+import { refreshAccessToken } from "../services/auth.service";
+
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    // puedes manejar errores globales aquí
+  async (error) => {
+    const originalRequest = error.config;
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      try {
+        const newToken = await refreshAccessToken();
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        return api(originalRequest);
+      } catch (refreshError) {
+        localStorage.clear();
+        window.location.href = "/";
+        return Promise.reject(refreshError);
+      }
+    }
     return Promise.reject(error);
   }
 );

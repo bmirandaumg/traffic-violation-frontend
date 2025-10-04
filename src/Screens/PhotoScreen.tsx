@@ -7,6 +7,7 @@ import { VehicleService } from '@/services/vehicle.service';
 import { CruiseService, type Cruise } from '@/services/cruise.service';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { Plates } from '@/enums/plates.enum';
 
 const PhotoScreen: React.FC = () => {
     // Estado para mostrar alerta de error de conexión
@@ -158,6 +159,11 @@ const PhotoScreen: React.FC = () => {
             setLoading(false);
         }
     };
+
+    const plateOptions = Object.values(Plates).map(value => ({
+        label: value,
+        value: value
+    }));
 
     const handleUnblockAndReturn = async () => {
         setLoading(true);
@@ -551,12 +557,18 @@ const PhotoScreen: React.FC = () => {
                                 {showSatInputs && (
                                     <>
                                         <Box mt={4} mb={2} display="flex" flexDirection={{ base: 'column', md: 'row' }} gap={2} alignItems="center" justifyContent="center">
-                                            <input
-                                                placeholder="Tipo"
+                                            <select
                                                 value={satTipo}
                                                 onChange={e => setSatTipo(e.target.value)}
                                                 style={{ padding: 8, borderRadius: 4, border: '1px solid #ccc', background: '#fff', color: '#222' }}
-                                            />
+                                            >
+                                                <option value="">Selecciona tipo</option>
+                                                {plateOptions.map(option => (
+                                                    <option key={option.value} value={option.value}>
+                                                        {option.label}
+                                                    </option>
+                                                ))}
+                                            </select>
                                             <input
                                                 placeholder="Placa"
                                                 value={satPlaca}
