@@ -12,6 +12,7 @@ import {
 } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 import { AuthService } from "../services/auth.service";
+import axios from "axios";
 
 const LoginScreen: React.FC = () => {
   const [username, setusername] = useState("");
@@ -36,7 +37,11 @@ const LoginScreen: React.FC = () => {
       navigate("/photos");
     } catch (err) {
       console.error("Login error:", err);
-      setError(err.response?.data?.message || "Login failed");
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.message || "Login failed");
+      } else {
+        setError("Login failed");
+      }
     } finally {
       setLoading(false);
     }

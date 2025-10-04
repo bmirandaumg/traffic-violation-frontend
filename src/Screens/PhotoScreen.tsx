@@ -6,6 +6,7 @@ import { PhotosService, type PhotoDetail, type Vehicle } from '@/services/photos
 import { VehicleService } from '@/services/vehicle.service';
 import { CruiseService, type Cruise } from '@/services/cruise.service';
 import { useLocation, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const PhotoScreen: React.FC = () => {
     // Estado para mostrar alerta de error de conexión
@@ -105,7 +106,11 @@ const PhotoScreen: React.FC = () => {
                 setCanProcessSat(false);
             }
         } catch (error) {
-            setSatError("Error consultando el servicio SAT.");
+            if (axios.isAxiosError(error)) {
+                setSatError(error.response?.data?.message || "Error consultando el servicio SAT.");
+            } else {
+                setSatError("Error consultando el servicio SAT.");
+            }
             setCanProcessSat(false);
         }
     };
