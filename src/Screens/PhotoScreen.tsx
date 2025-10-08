@@ -14,7 +14,7 @@ const PhotoScreen: React.FC = () => {
     const [showProcessError, setShowProcessError] = useState(false);
     const [processErrorMsg, setProcessErrorMsg] = useState('');
     const [photoDetail, setPhotoDetail] = useState<PhotoDetail>();
-    const [editMode, setEditMode] = useState(false);
+
     const [loading, setLoading] = useState<boolean>(true);
     const [unblockError, setUnblockError] = useState<string | null>(null);
     // Estado para habilitar/deshabilitar el botón Procesar en modo SAT
@@ -28,7 +28,7 @@ const PhotoScreen: React.FC = () => {
     const [editLocation, setEditLocation] = useState(photoDetail?.location || '');
     const [editSpeedLimit, setEditSpeedLimit] = useState(photoDetail?.speedLimit || '');
     const [editMeasuredSpeed, setEditMeasuredSpeed] = useState(photoDetail?.measuredSpeed || '');
-    const [showValidation, setShowValidation] = useState(false);
+
     const location = useLocation();
     const { photo } = location.state || {};
     const { photo_base64 } = photo || {};
@@ -73,16 +73,16 @@ const PhotoScreen: React.FC = () => {
       fetchCruises();
     }, []);
 
-    // Sincronizar estados temporales al entrar en modo edición
+    // Sincronizar estados temporales cuando cambia photoDetail
     useEffect(() => {
-        if (editMode && photoDetail) {
+        if (photoDetail) {
             setEditDate(toInputDateFormat(date));
             setEditTime(getUTCTimeWithSecondsFromISO(photoDetail.timestamp));
             setEditLocation(photoDetail.location || '');
             setEditSpeedLimit(photoDetail.speedLimit || '');
             setEditMeasuredSpeed(photoDetail.measuredSpeed || '');
         }
-    }, [editMode, photoDetail, date]);
+    }, [photoDetail, date]);
 
     // Estado para consulta SAT
     const [showSatInputs, setShowSatInputs] = useState(false);
@@ -152,6 +152,9 @@ const PhotoScreen: React.FC = () => {
         setLoading(true);
         try {
             await PhotosService.deletePhoto(id);
+            // Al descartar una foto, limpiamos los filtros para empezar una nueva búsqueda
+            localStorage.removeItem('photos_filter_cruise');
+            localStorage.removeItem('photos_filter_date');
             navigate("/photos");
         } catch (error) {
             console.error("Error deleting photo:", error);
@@ -170,7 +173,8 @@ const PhotoScreen: React.FC = () => {
         setUnblockError(null);
         try {
             await PhotosService.unBlockPhoto(photoDetail!.id);
-        navigate("/photos");
+            // Al regresar, mantenemos los filtros para que el usuario continúe donde estaba
+            navigate("/photos");
         } catch (error) {
             console.error("Ocurrió un error al liberar la foto", error);
             setUnblockError("Error al liberar la foto");
@@ -195,6 +199,7 @@ const PhotoScreen: React.FC = () => {
             const data = await PhotosService.processPhoto(params);
             console.log(data);
             if (data.status === "processed") {
+                // Al procesar exitosamente, mantenemos los filtros para continuar con la siguiente foto
                 navigate("/photos");
             } else {
                 setProcessErrorMsg('No se pudo procesar la foto. Intenta nuevamente.');
@@ -218,15 +223,7 @@ const PhotoScreen: React.FC = () => {
         }
         return dateStr;
     }
-    // Utilidad para convertir yyyy-mm-dd a dd/mm/yyyy
-    function toDisplayDateFormat(dateStr: string) {
-        if (!dateStr) return '';
-        const parts = dateStr.split('-');
-        if (parts.length === 3) {
-            return `${parts[2]}/${parts[1]}/${parts[0]}`;
-        }
-        return dateStr;
-    }
+
     // Utilidad para extraer hora UTC en formato HH:mm:ss
     function getUTCTimeWithSecondsFromISO(isoStr: string) {
       if (!isoStr) return '';
@@ -287,16 +284,22 @@ const PhotoScreen: React.FC = () => {
             {loading ? (
                 <Spinner size="xl" />
             ) : (
-                <Box color="black" display="flex" flexDirection={{ base: 'column', md: 'row' }} gap={8}>
-                    {/* Columna izquierda: Foto y botones */}
-                    <Box flex={1} display="flex" flexDirection="column" alignItems="center">
+                <Box 
+                    color="black" 
+                    display="grid" 
+                    gridTemplateColumns={{ base: '1fr', lg: '1fr 1fr 1fr' }} 
+                    gap={4}
+                    minHeight="calc(100vh - 120px)"
+                >
+                    {/* Columna 1: Foto y botones */}
+                    <Box display="flex" flexDirection="column" alignItems="center" justifyContent="flex-start">
                         {photo_base64 && (
-                            <Box display="flex" justifyContent="center" alignItems="center" width="100%" mb={4}>
+                            <Box display="flex" justifyContent="center" alignItems="center" width="100%" mb={3}>
                                 <Image
                                     src={`data:image/png;base64,${photo_base64}`}
                                     alt="Foto"
-                                    maxWidth="800px"
-                                    maxHeight="500px"
+                                    maxWidth="550px"
+                                    maxHeight="400px"
                                     width="100%"
                                     height="auto"
                                     objectFit="contain"
@@ -305,14 +308,15 @@ const PhotoScreen: React.FC = () => {
                                 />
                             </Box>
                         )}
-                        <Box width="100%" display="flex" flexDirection={{ base: 'column', md: 'row' }} gap={2} mt={4} justifyContent="center" alignItems="center">
+                        <Box width="100%" display="flex" flexDirection="column" gap={2} mt={2} alignItems="stretch">
                             <Button 
                                 color="white" 
                                 variant='outline' 
                                 _hover={{ bg: '#4cae4f' }} 
                                 bg='#5cb85c' 
                                 onClick={processPhoto} 
-                                disabled={editMode || (showSatInputs ? !canProcessSat : false)}
+                                disabled={showSatInputs ? !canProcessSat : false}
+                                size="sm"
                             >
                                 Procesar
                             </Button>
@@ -332,266 +336,199 @@ const PhotoScreen: React.FC = () => {
                                         return newValue;
                                     });
                                 }}
-                                disabled={editMode || showSatInputs}
+                                disabled={showSatInputs}
+                                size="sm"
                             >
-                                Realizar Consulta en Sat
+                                Realizar Consulta en SAT
                             </Button>
                             <Button 
-                            color="white"
-                            variant='outline' 
-                            onClick={() => handleDeletePhoto(photoDetail!.id)}
-                            _hover={{ bg: '#c82333' }} 
-                            bg='#dc3545' 
-                            disabled={editMode}>
+                                color="white"
+                                variant='outline' 
+                                onClick={() => handleDeletePhoto(photoDetail!.id)}
+                                _hover={{ bg: '#c82333' }} 
+                                bg='#dc3545'
+                                size="sm"
+                            >
                                 Descartar
                             </Button>
                             <Button 
-                            color="white"
-                            variant="outline"
-                            bg="#83D00D"
-                            _hover={{ bg: "#6bb300" }}
-                            onClick={handleUnblockAndReturn}
+                                color="white"
+                                variant="outline"
+                                bg="#83D00D"
+                                _hover={{ bg: "#6bb300" }}
+                                onClick={handleUnblockAndReturn}
+                                size="sm"
                             >
                                 Regresar
                             </Button>
                         </Box>
                         {unblockError && (
-                        <Text color="red.500" mt={2} textAlign="center">
-                        {unblockError}
-                        </Text>
+                            <Text color="red.500" mt={2} textAlign="center" fontSize="sm">
+                                {unblockError}
+                            </Text>
                         )}
                     </Box>
-                    {/* Columna derecha: Datos y vehículo */}
-                    <Box flex={1} display="flex" flexDirection="column" gap={4}>
-                        {photoDetail && (
-                            <>
-                                <Box p={2} borderWidth={1} borderRadius={8} bg="#f8f9fa" color="black" maxWidth="1200px" minWidth="400px" mx="auto">
-                                    <Text fontWeight="bold" fontSize="lg" mb={3} textAlign="center">Información del Vehiculo</Text>
-                                    <Box as="form" display="grid" gridTemplateColumns="150px 1fr" rowGap={2} columnGap={2} alignItems="center">
-                                        <label htmlFor="fecha-input" style={{ fontWeight: 'bold', textAlign: 'right' }}>Fecha:</label>
-                                        {editMode ? (
-                                            <input
-                                                type="date"
-                                                value={editDate}
-                                                onChange={e => setEditDate(e.target.value)}
-                                                style={{ flex: 1, background: '#fff', border: showValidation && !editDate ? '2px solid #e53e3e' : '1px solid #cbd5e1', borderRadius: 6, padding: '2px 12px', fontSize: 16 }}
-                                            />
-                                        ) : (
-                                            <input
-                                                value={date || ''}
-                                                disabled
-                                                style={{ flex: 1, background: '#e2e8f0', border: '1px solid #cbd5e1', borderRadius: 6, padding: '2px 12px', fontSize: 16 }}
-                                            />
-                                        )}
-                                        <label htmlFor="hora-input" style={{ fontWeight: 'bold', textAlign: 'right' }}>Hora:</label>
-                                        {editMode ? (
-                                            <Box display="flex" flexDirection="column">
-                                                <input
-                                                    id="hora-input"
-                                                    type="time"
-                                                    step="1"
-                                                    value={editTime}
-                                                    onChange={e => setEditTime(e.target.value)}
-                                                    style={{ flex: 1, background: '#fff', border: showValidation && !editTime ? '2px solid #e53e3e' : '1px solid #cbd5e1', borderRadius: 6, padding: '2px 12px', fontSize: 16 }}
-                                                />
-                                                {editTime && (
-                                                    <Text fontSize="sm" color="gray.600" mt={1}>
-                                                        Formato 24h: {normalizeTo24HourFormat(editTime)}
-                                                    </Text>
-                                                )}
-                                            </Box>
-                                        ) : (
-                                            <Box display="flex" flexDirection="column">
-                                                <input
-                                                    id="hora-input"
-                                                    value={time}
-                                                    disabled
-                                                    style={{ flex: 1, background: '#e2e8f0', border: '1px solid #cbd5e1', borderRadius: 6, padding: '2px 12px', fontSize: 16 }}
-                                                />
-                                                {time && (
-                                                    <Text fontSize="sm" color="gray.600" mt={1}>
-                                                        Formato 24h: {normalizeTo24HourFormat(time)}
-                                                    </Text>
-                                                )}
-                                            </Box>
-                                        )}
-                                        <label htmlFor="ubicacion-input" style={{ fontWeight: 'bold', textAlign: 'right' }}>Ubicación:</label>
-                                        {editMode ? (
-                                            <select
-                                                value={editLocation}
-                                                onChange={e => setEditLocation(e.target.value)}
-                                                style={{ flex: 1, background: '#fff', border: showValidation && !editLocation ? '2px solid #e53e3e' : '1px solid #cbd5e1', borderRadius: 6, padding: '2px 12px', fontSize: 16 }}
-                                            >
-                                                <option value="">Seleccione un crucero</option>
-                                                {cruises.map(c => (
-                                                  <option key={c.id} value={c.cruise_name}>{c.cruise_name}</option>
-                                                ))}
-                                            </select>
-                                        ) : (
-                                            <input
-                                                value={photoDetail?.location || ''}
-                                                disabled
-                                                style={{ flex: 1, background: '#e2e8f0', border: '1px solid #cbd5e1', borderRadius: 6, padding: '2px 12px', fontSize: 16 }}
-                                            />
-                                        )}
-                                        <label htmlFor="limite-input" style={{ fontWeight: 'bold', textAlign: 'right' }}>Límite de velocidad:</label>
-                                        {editMode ? (
-                                            <input 
-                                                id="limite-input"
-                                                type="number"
-                                                value={editSpeedLimit}
-                                                onChange={e => setEditSpeedLimit(e.target.value)}
-                                                style={{ width: '100%', background: '#fff', border: showValidation && !editSpeedLimit ? '2px solid #e53e3e' : '1px solid #cbd5e1', borderRadius: 4, padding: '2px 8px' }}
-                                            />
-                                        ) : (
-                                            <input
-                                                id="limite-input"
-                                                value={photoDetail.speedLimit ?? ''}
-                                                disabled
-                                                style={{ width: '100%', background: '#e2e8f0', border: 'none', borderRadius: 4, padding: '2px 8px' }}
-                                            />
-                                        )}
-                                        <label htmlFor="medida-input" style={{ fontWeight: 'bold', textAlign: 'right' }}>Velocidad medida:</label>
-                                        {editMode ? (
-                                            <input
-                                                id="medida-input"
-                                                type="number"
-                                                value={editMeasuredSpeed}
-                                                onChange={e => setEditMeasuredSpeed(e.target.value)}
-                                                style={{ width: '100%', background: '#fff', border: showValidation && !editMeasuredSpeed ? '2px solid #e53e3e' : '1px solid #cbd5e1', borderRadius: 4, padding: '2px 8px' }}
-                                            />
-                                        ) : (
-                                            <input
-                                                id="medida-input"
-                                                value={photoDetail.measuredSpeed ?? ''}
-                                                disabled
-                                                style={{ width: '100%', background: '#e2e8f0', border: 'none', borderRadius: 4, padding: '2px 8px' }}
-                                            />
-                                        )}
 
-                                    {/* Botones Editar y Guardar */}
-                                    <Box gridColumn="1 / span 2" display="flex" justifyContent="center" gap={4} mt={4}>
-                                        <Button 
-                                            colorScheme="blue"
-                                            bg="#007bff"
-                                            color="white"
-                                            _hover={{ bg: "#0056b3" }}
-                                            disabled={!photoDetail || editMode}
-                                            onClick={() => setEditMode(true)}
-                                        >Editar</Button>
-                                        <Button 
-                                            colorScheme="green" 
-                                            bg="#38a169" 
-                                            _hover={{ bg: "#2f8b5b" }}
-                                            color="white" 
-                                            disabled={!editMode} 
-                                            onClick={() => {
-                                                if (!editDate || !editTime || !editLocation || !editSpeedLimit || !editMeasuredSpeed) {
-                                                    setShowValidation(true);
-                                                    return;
-                                                }
-                                                const isoTimestamp = getDateTimeFromForm(editDate, editTime).toISOString();
-                                                // Actualizar photoDetail y los estados globales (incluyendo timestamp)
-                                                setPhotoDetail(prev => prev ? {
-                                                    ...prev,
-                                                    timestamp: isoTimestamp,
-                                                    location: editLocation,
-                                                    speedLimit: editSpeedLimit,
-                                                    measuredSpeed: editMeasuredSpeed
-                                                } : prev);
-                                                setDate(toDisplayDateFormat(editDate)); // Guardamos formato dd/mm/yyyy
-                                                setTime(editTime); // Guardamos la hora HH:mm:ss
-                                                setEditMode(false);
-                                                setShowValidation(false);
-                                            }}
-                                        >Guardar</Button>
-                                    </Box>
-                                    </Box>
-                                </Box>
-                                {/* Mostrar el recuadro verde solo si no está activa la consulta manual */}
-                                {photoDetail.consultaVehiculo && !showSatInputs ? (
-                                    <Box p={2} borderWidth={1} borderRadius={8} bg="#f8f9fa" color="black" maxWidth="1200px" minWidth="400px" mx="auto">
-                                        <Text fontWeight='bold' fontSize="lg" mb={3} textAlign="center" color="#22543d">Resultado SAT</Text>
-                                        <Box as="dl" display="grid" gridTemplateColumns="180px 1fr" alignItems="center" borderRadius={8} overflow="hidden">
-                                            {[
-                                                { label: 'Tipo', value: photoDetail.consultaVehiculo.TIPO },
-                                                { label: 'Marca', value: photoDetail.consultaVehiculo.MARCA },
-                                                { label: 'Línea', value: photoDetail.consultaVehiculo.LINEA },
-                                                { label: 'Modelo', value: photoDetail.consultaVehiculo.MODELO },
-                                                { label: 'Color', value: photoDetail.consultaVehiculo.COLOR },
-                                                { label: 'Uso', value: photoDetail.consultaVehiculo.USO },
-                                                { label: 'Placa', value: photoDetail.consultaVehiculo.PLACA },
-                                                { label: 'CC', value: photoDetail.consultaVehiculo.CC },
-                                            ].map((item, idx) => (
-                                                <React.Fragment key={item.label}>
-                                                    <Box as="dt" fontWeight="bold" textAlign="right" px={2} py={2} bg={idx % 2 === 0 ? '#38a169' : 'transparent'} color={idx % 2 === 0 ? 'white' : '#22543d'}>
-                                                        {item.label}:
-                                                    </Box>
-                                                    <Box as="dd" px={2} py={2} bg={idx % 2 === 0 ? '#38a169' : 'transparent'} color={idx % 2 === 0 ? 'white' : '#22543d'}>
-                                                        {item.value}
-                                                    </Box>
-                                                </React.Fragment>
-                                            ))}
-                                        </Box>
-                                    </Box>
-                                ) : photoDetail.isSatVehicleInfoFound === false && showSatError && !showSatInputs ? (
-                                    <Box 
-                                        display="flex"
-                                        flexDirection="row"
-                                        alignItems="center"
-                                        justifyContent="center"
-                                        gap={2}
-                                        mt={2}
-                                        p={2}
-                                        borderWidth={1}
-                                        borderRadius={8}
-                                        bg="#fff5f5"
-                                        borderColor="#feb2b2"
-                                        maxWidth="420px"
-                                        mx="auto"
-                                    >
-                                        <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#feb2b2"/><path d="M12 7v5" stroke="#c53030" strokeWidth="2" strokeLinecap="round"/><circle cx="12" cy="16" r="1" fill="#c53030"/></svg>
-                                        <Text color="#c53030" fontWeight="bold" whiteSpace="nowrap">No se encontró información SAT del vehículo.</Text>
-                                    </Box>
-                                ) : null}
-                                {showSatInputs && (
-                                    <>
-                                        <Box mt={4} mb={2} display="flex" flexDirection={{ base: 'column', md: 'row' }} gap={2} alignItems="center" justifyContent="center">
-                                            <select
-                                                value={satTipo}
-                                                onChange={e => setSatTipo(e.target.value)}
-                                                style={{ padding: 8, borderRadius: 4, border: '1px solid #ccc', background: '#fff', color: '#222' }}
-                                            >
-                                                <option value="">Selecciona tipo</option>
-                                                {plateOptions.map(option => (
-                                                    <option key={option.value} value={option.value}>
-                                                        {option.label}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            <input
-                                                placeholder="Placa"
-                                                value={satPlaca}
-                                                onChange={e => setSatPlaca(e.target.value)}
-                                                style={{ padding: 8, borderRadius: 4, border: '1px solid #ccc', background: '#fff', color: '#222' }}
-                                            />
-                                            <Button color="white" variant='outline' _hover={{ bg: '#2f855a' }} bg='#38a169' onClick={handleSatSearch}>
-                                                Buscar
-                                            </Button>
-                                        </Box>
-                                        {satError && (
-                                            <Text color="red.500" mt={2} textAlign="center">
-                                                {satError}
+                    {/* Columna 2: Información del Vehículo */}
+                    <Box display="flex" flexDirection="column" justifyContent="flex-start">
+                        {photoDetail && (
+                            <Box p={3} borderWidth={1} borderRadius={8} bg="#f8f9fa" color="black" width="100%">
+                                <Text fontWeight="bold" fontSize="md" mb={3} textAlign="center">Información del Vehículo</Text>
+                                <Box as="form" display="grid" gridTemplateColumns="120px 1fr" rowGap={2} columnGap={2} alignItems="center">
+                                    <label htmlFor="fecha-input" style={{ fontWeight: 'bold', textAlign: 'right', fontSize: '14px' }}>Fecha:</label>
+                                    <input
+                                        type="date"
+                                        value={editDate}
+                                        onChange={e => setEditDate(e.target.value)}
+                                        style={{ flex: 1, background: '#fff', border: '1px solid #cbd5e1', borderRadius: 4, padding: '4px 8px', fontSize: 14 }}
+                                    />
+                                    <label htmlFor="hora-input" style={{ fontWeight: 'bold', textAlign: 'right', fontSize: '14px' }}>Hora:</label>
+                                    <Box display="flex" flexDirection="column">
+                                        <input
+                                            id="hora-input"
+                                            type="time"
+                                            step="1"
+                                            value={editTime}
+                                            onChange={e => setEditTime(e.target.value)}
+                                            style={{ flex: 1, background: '#fff', border: '1px solid #cbd5e1', borderRadius: 4, padding: '4px 8px', fontSize: 14 }}
+                                        />
+                                        {editTime && (
+                                            <Text fontSize="xs" color="gray.600" mt={1}>
+                                                Formato 24h: {normalizeTo24HourFormat(editTime)}
                                             </Text>
                                         )}
-                                    </>
-                                )}
-                            </>
+                                    </Box>
+                                    <label htmlFor="ubicacion-input" style={{ fontWeight: 'bold', textAlign: 'right', fontSize: '14px' }}>Ubicación:</label>
+                                    <select
+                                        value={editLocation}
+                                        onChange={e => setEditLocation(e.target.value)}
+                                        style={{ flex: 1, background: '#fff', border: '1px solid #cbd5e1', borderRadius: 4, padding: '4px 8px', fontSize: 14 }}
+                                    >
+                                        <option value="">Seleccione un crucero</option>
+                                        {cruises.map(c => (
+                                          <option key={c.id} value={c.cruise_name}>{c.cruise_name}</option>
+                                        ))}
+                                    </select>
+                                    <label htmlFor="limite-input" style={{ fontWeight: 'bold', textAlign: 'right', fontSize: '14px' }}>Límite de velocidad:</label>
+                                    <input 
+                                        id="limite-input"
+                                        type="number"
+                                        value={editSpeedLimit}
+                                        onChange={e => setEditSpeedLimit(e.target.value)}
+                                        style={{ width: '100%', background: '#fff', border: '1px solid #cbd5e1', borderRadius: 4, padding: '4px 8px', fontSize: 14 }}
+                                    />
+                                    <label htmlFor="medida-input" style={{ fontWeight: 'bold', textAlign: 'right', fontSize: '14px' }}>Velocidad medida:</label>
+                                    <input
+                                        id="medida-input"
+                                        type="number"
+                                        value={editMeasuredSpeed}
+                                        onChange={e => setEditMeasuredSpeed(e.target.value)}
+                                        style={{ width: '100%', background: '#fff', border: '1px solid #cbd5e1', borderRadius: 4, padding: '4px 8px', fontSize: 14 }}
+                                    />
+                                </Box>
+                            </Box>
                         )}
+
+                        {/* Sección de consulta SAT manual */}
+                        {showSatInputs && (
+                            <Box mt={3} p={3} borderWidth={1} borderRadius={8} bg="#f0f8ff" width="100%">
+                                <Text fontWeight="bold" fontSize="md" mb={2} textAlign="center">Consulta SAT Manual</Text>
+                                <Box display="flex" flexDirection="column" gap={2}>
+                                    <select
+                                        value={satTipo}
+                                        onChange={e => setSatTipo(e.target.value)}
+                                        style={{ padding: '6px 8px', borderRadius: 4, border: '1px solid #ccc', background: '#fff', color: '#222', fontSize: 14 }}
+                                    >
+                                        <option value="">Selecciona tipo</option>
+                                        {plateOptions.map(option => (
+                                            <option key={option.value} value={option.value}>
+                                                {option.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <input
+                                        placeholder="Placa"
+                                        value={satPlaca}
+                                        onChange={e => setSatPlaca(e.target.value)}
+                                        style={{ padding: '6px 8px', borderRadius: 4, border: '1px solid #ccc', background: '#fff', color: '#222', fontSize: 14 }}
+                                    />
+                                    <Button 
+                                        color="white" 
+                                        variant='outline' 
+                                        _hover={{ bg: '#2f855a' }} 
+                                        bg='#38a169' 
+                                        onClick={handleSatSearch}
+                                        size="sm"
+                                        width="100%"
+                                    >
+                                        Buscar
+                                    </Button>
+                                </Box>
+                                {satError && (
+                                    <Text color="red.500" mt={2} textAlign="center" fontSize="sm">
+                                        {satError}
+                                    </Text>
+                                )}
+                            </Box>
+                        )}
+                    </Box>
+
+                    {/* Columna 3: Resultado SAT */}
+                    <Box display="flex" flexDirection="column" justifyContent="flex-start">
+                        {/* Resultado SAT automático */}
+                        {photoDetail && photoDetail.consultaVehiculo && !showSatInputs && (
+                            <Box p={3} borderWidth={1} borderRadius={8} bg="#f8f9fa" color="black" width="100%">
+                                <Text fontWeight='bold' fontSize="md" mb={3} textAlign="center" color="#22543d">Resultado SAT</Text>
+                                <Box as="dl" display="grid" gridTemplateColumns="100px 1fr" alignItems="center" borderRadius={8} overflow="hidden" fontSize="sm">
+                                    {[
+                                        { label: 'Tipo', value: photoDetail.consultaVehiculo.TIPO },
+                                        { label: 'Marca', value: photoDetail.consultaVehiculo.MARCA },
+                                        { label: 'Línea', value: photoDetail.consultaVehiculo.LINEA },
+                                        { label: 'Modelo', value: photoDetail.consultaVehiculo.MODELO },
+                                        { label: 'Color', value: photoDetail.consultaVehiculo.COLOR },
+                                        { label: 'Uso', value: photoDetail.consultaVehiculo.USO },
+                                        { label: 'Placa', value: photoDetail.consultaVehiculo.PLACA },
+                                        { label: 'CC', value: photoDetail.consultaVehiculo.CC },
+                                    ].map((item, idx) => (
+                                        <React.Fragment key={item.label}>
+                                            <Box as="dt" fontWeight="bold" textAlign="right" px={1} py={1} bg={idx % 2 === 0 ? '#38a169' : 'transparent'} color={idx % 2 === 0 ? 'white' : '#22543d'}>
+                                                {item.label}:
+                                            </Box>
+                                            <Box as="dd" px={1} py={1} bg={idx % 2 === 0 ? '#38a169' : 'transparent'} color={idx % 2 === 0 ? 'white' : '#22543d'}>
+                                                {item.value}
+                                            </Box>
+                                        </React.Fragment>
+                                    ))}
+                                </Box>
+                            </Box>
+                        )}
+
+                        {/* Error cuando no se encuentra información SAT */}
+                        {photoDetail && photoDetail.isSatVehicleInfoFound === false && showSatError && !showSatInputs && (
+                            <Box 
+                                display="flex"
+                                flexDirection="row"
+                                alignItems="center"
+                                justifyContent="center"
+                                gap={2}
+                                mt={2}
+                                p={2}
+                                borderWidth={1}
+                                borderRadius={8}
+                                bg="#fff5f5"
+                                borderColor="#feb2b2"
+                                width="100%"
+                            >
+                                <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#feb2b2"/><path d="M12 7v5" stroke="#c53030" strokeWidth="2" strokeLinecap="round"/><circle cx="12" cy="16" r="1" fill="#c53030"/></svg>
+                                <Text color="#c53030" fontWeight="bold" fontSize="sm">No se encontró información SAT del vehículo.</Text>
+                            </Box>
+                        )}
+
+                        {/* Resultado de consulta SAT manual */}
                         {satVehicle && (
-                            <Box mt={2} p={2} borderWidth={1} borderRadius={8} bg="#f8f9fa" color="black" maxWidth="1200px" minWidth="400px" mx="auto">
-                                <Text fontWeight='bold' fontSize="lg" mb={3} textAlign="center" color="#22543d">Resultado SAT</Text>
-                                <Box as="dl" display="grid" gridTemplateColumns="180px 1fr" alignItems="center" borderRadius={8} overflow="hidden">
+                            <Box mt={2} p={3} borderWidth={1} borderRadius={8} bg="#f8f9fa" color="black" width="100%">
+                                <Text fontWeight='bold' fontSize="md" mb={3} textAlign="center" color="#22543d">Resultado SAT Manual</Text>
+                                <Box as="dl" display="grid" gridTemplateColumns="100px 1fr" alignItems="center" borderRadius={8} overflow="hidden" fontSize="sm">
                                     {[ 
                                         { label: 'Estado', value: satVehicle.ESTADO },
                                         { label: 'Placa', value: satVehicle.PLACA },
@@ -604,10 +541,10 @@ const PhotoScreen: React.FC = () => {
                                         { label: 'CC', value: satVehicle.CC },
                                     ].map((item, idx) => (
                                         <React.Fragment key={item.label}>
-                                            <Box as="dt" fontWeight="bold" textAlign="right" px={2} py={2} bg={idx % 2 === 0 ? '#38a169' : 'transparent'} color={idx % 2 === 0 ? 'white' : '#22543d'}>
+                                            <Box as="dt" fontWeight="bold" textAlign="right" px={1} py={1} bg={idx % 2 === 0 ? '#38a169' : 'transparent'} color={idx % 2 === 0 ? 'white' : '#22543d'}>
                                                 {item.label}:
                                             </Box>
-                                            <Box as="dd" px={2} py={2} bg={idx % 2 === 0 ? '#38a169' : 'transparent'} color={idx % 2 === 0 ? 'white' : '#22543d'}>
+                                            <Box as="dd" px={1} py={1} bg={idx % 2 === 0 ? '#38a169' : 'transparent'} color={idx % 2 === 0 ? 'white' : '#22543d'}>
                                                 {item.value}
                                             </Box>
                                         </React.Fragment>
@@ -620,5 +557,6 @@ const PhotoScreen: React.FC = () => {
             )}
         </Box>
     );
-}
+};
+
 export default PhotoScreen;

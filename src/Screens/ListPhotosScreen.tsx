@@ -11,16 +11,22 @@ type CruiseCollection = ReturnType<typeof createListCollection<CruiseItem>>;
 const PhotosScreen: React.FC = () => {
     const [photos, setPhotos] = useState<Photo[]>([]);
     const [cruiseCollection, setCruiseCollection] = useState<CruiseCollection | undefined>(undefined);
-    const [selectedCruise, setSelectedCruise] = useState<string>("")
+    const [selectedCruise, setSelectedCruise] = useState<string>("");
     const [date, setDate] = useState<string>("");
     const [loading, setLoading] = useState<boolean>(true);
+    const [hasAutoSearched, setHasAutoSearched] = useState<boolean>(false);
     const navigate = useNavigate();
 
     const fetchPhotos = async (cruise_id: number, date: string, page: number) => {
         try {
+            setLoading(true);
             const data = await PhotosService.getAll(cruise_id, date, page);
             console.log(data);
             setPhotos(data);
+            
+            // Guardar filtros en localStorage para persistencia
+            localStorage.setItem('photos_filter_cruise', cruise_id.toString());
+            localStorage.setItem('photos_filter_date', date);
         } catch (error) {
             console.error("Error fetching photos:", error);
         } finally {
@@ -50,8 +56,31 @@ const PhotosScreen: React.FC = () => {
 
     useEffect(() => {
         fetchCruises();
-    }
-        , []);
+    }, []);
+
+    // Restaurar filtros desde localStorage al cargar la pantalla
+    useEffect(() => {
+        const savedCruise = localStorage.getItem('photos_filter_cruise');
+        const savedDate = localStorage.getItem('photos_filter_date');
+        
+        if (savedCruise) {
+            setSelectedCruise(savedCruise);
+        }
+        if (savedDate) {
+            setDate(savedDate);
+        }
+    }, []);
+
+    // Búsqueda automática cuando se restauran los filtros y ya están los cruceros cargados (solo una vez)
+    useEffect(() => {
+        if (selectedCruise && date && cruiseCollection && !hasAutoSearched) {
+            setHasAutoSearched(true);
+            // Usar setTimeout para evitar conflictos con el loading state
+            setTimeout(() => {
+                fetchPhotos(parseInt(selectedCruise), date, 1);
+            }, 100);
+        }
+    }, [selectedCruise, date, cruiseCollection, hasAutoSearched]);
 
 
     const onPressPhoto = async (photo: Photo) => {
@@ -122,9 +151,20 @@ const PhotosScreen: React.FC = () => {
                             />
                         </Field.Root>
 
-                        <Button alignSelf='flex-end' bg='#83D00D' color='white' _hover={{ bg: "#4cae4c" }}
-                            onClick={() => fetchPhotos(parseInt(selectedCruise), date, 1)}
-                        >Obtener fotos</Button>
+                        <Button 
+                            alignSelf='flex-end' 
+                            bg='#83D00D' 
+                            color='white' 
+                            _hover={{ bg: "#4cae4c" }}
+                            onClick={() => {
+                                if (selectedCruise && date) {
+                                    fetchPhotos(parseInt(selectedCruise), date, 1);
+                                }
+                            }}
+                            disabled={!selectedCruise || !date}
+                        >
+                            Obtener fotos
+                        </Button>
 
 
                     </Box>

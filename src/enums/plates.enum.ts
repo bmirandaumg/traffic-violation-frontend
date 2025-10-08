@@ -1,12 +1,12 @@
 // src/enums/plates.enum.ts
 export const Plates = {
-    A: "A",
+    P: "P",
     M: "M",
+    A: "A",
+    C: "C",
     U: "U",
     O: "O",
-    C: "C",
     E: "E",
-    P: "P",
     CD: "CD",
     DT: "DT",
     TC: "TC",
