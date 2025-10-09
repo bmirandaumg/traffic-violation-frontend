@@ -17,8 +17,7 @@ const PhotoScreen: React.FC = () => {
 
     const [loading, setLoading] = useState<boolean>(true);
     const [unblockError, setUnblockError] = useState<string | null>(null);
-    // Estado para habilitar/deshabilitar el botón Procesar en modo SAT
-    const [canProcessSat, setCanProcessSat] = useState(false);
+
     // Estados originales para fecha y hora
     const [date, setDate] = useState<string>("");
     const [time, setTime] = useState<string>("");
@@ -85,7 +84,6 @@ const PhotoScreen: React.FC = () => {
     }, [photoDetail, date]);
 
     // Estado para consulta SAT
-    const [showSatInputs, setShowSatInputs] = useState(false);
     const [satPlaca, setSatPlaca] = useState("");
     const [satTipo, setSatTipo] = useState("");
     const [satVehicle, setSatVehicle] = useState<Vehicle | null>(null);
@@ -93,18 +91,15 @@ const PhotoScreen: React.FC = () => {
     const [showSatError, setShowSatError] = useState<boolean>(true);
 
     const handleSatSearch = async () => {
-    setSatError("");
-    setShowSatError(true);
-    setSatVehicle(null);
-    setCanProcessSat(false); // Deshabilitar procesar hasta que la consulta sea exitosa
+        setSatError("");
+        setShowSatError(true);
+        setSatVehicle(null);
         try {
             const vehicle = await VehicleService.consultarVehiculo(satPlaca, satTipo);
             if (vehicle && vehicle.PLACA) {
                 setSatVehicle(vehicle);
-                setCanProcessSat(true); // Habilitar procesar si la consulta fue exitosa
             } else {
                 setSatError("No se encontró información para los datos ingresados.");
-                setCanProcessSat(false);
             }
         } catch (error) {
             if (axios.isAxiosError(error)) {
@@ -112,7 +107,6 @@ const PhotoScreen: React.FC = () => {
             } else {
                 setSatError("Error consultando el servicio SAT.");
             }
-            setCanProcessSat(false);
         }
     };
 
@@ -185,17 +179,28 @@ const PhotoScreen: React.FC = () => {
 
     const processPhoto = async () => {
         if (!photoDetail || !photoDetail.consultaVehiculo || !photo) return;
+        
+        // Validar que los campos editables estén llenos
+        if (!editLocation || !editDate || !editTime || !editSpeedLimit || !editMeasuredSpeed) {
+            setProcessErrorMsg('Por favor complete todos los campos antes de procesar.');
+            setShowProcessError(true);
+            return;
+        }
+        
         setLoading(true);
         try {
+            // Usar los valores editados en lugar de los originales del photoDetail
             const params = {
-                cruise: photoDetail.location || "",
-                timestamp: getDateTimeFromForm(date, time),
-                speed_limit_kmh: Number(photoDetail.speedLimit) || 0,
-                current_speed_kmh: Number(photoDetail.measuredSpeed) || 0,
+                cruise: editLocation,
+                timestamp: getDateTimeFromForm(editDate, editTime),
+                speed_limit_kmh: Number(editSpeedLimit),
+                current_speed_kmh: Number(editMeasuredSpeed),
                 lpNumber: photoDetail.plate_parts?.lpNumber || "",
                 lpType: photoDetail.plate_parts?.lpType || "",
                 photoId: photoDetail.id
             };
+            
+            console.log('📤 Enviando parámetros actualizados:', params);
             const data = await PhotosService.processPhoto(params);
             console.log(data);
             if (data.status === "processed") {
@@ -315,32 +320,11 @@ const PhotoScreen: React.FC = () => {
                                 _hover={{ bg: '#4cae4f' }} 
                                 bg='#5cb85c' 
                                 onClick={processPhoto} 
-                                disabled={showSatInputs ? !canProcessSat : false}
                                 size="sm"
                             >
                                 Procesar
                             </Button>
-                            <Button 
-                                color="white" 
-                                variant='outline' 
-                                bg='#007bff' 
-                                _hover={{ bg: '#0056b3' }}
-                                onClick={() => {
-                                    setShowSatInputs(v => {
-                                        const newValue = !v;
-                                        if (newValue) {
-                                            setShowSatError(false);
-                                            setSatError("");
-                                            setSatVehicle(null);
-                                        }
-                                        return newValue;
-                                    });
-                                }}
-                                disabled={showSatInputs}
-                                size="sm"
-                            >
-                                Realizar Consulta en SAT
-                            </Button>
+
                             <Button 
                                 color="white"
                                 variant='outline' 
@@ -429,54 +413,52 @@ const PhotoScreen: React.FC = () => {
                             </Box>
                         )}
 
-                        {/* Sección de consulta SAT manual */}
-                        {showSatInputs && (
-                            <Box mt={3} p={3} borderWidth={1} borderRadius={8} bg="#f0f8ff" width="100%">
-                                <Text fontWeight="bold" fontSize="md" mb={2} textAlign="center">Consulta SAT Manual</Text>
-                                <Box display="flex" flexDirection="column" gap={2}>
-                                    <select
-                                        value={satTipo}
-                                        onChange={e => setSatTipo(e.target.value)}
-                                        style={{ padding: '6px 8px', borderRadius: 4, border: '1px solid #ccc', background: '#fff', color: '#222', fontSize: 14 }}
-                                    >
-                                        <option value="">Selecciona tipo</option>
-                                        {plateOptions.map(option => (
-                                            <option key={option.value} value={option.value}>
-                                                {option.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <input
-                                        placeholder="Placa"
-                                        value={satPlaca}
-                                        onChange={e => setSatPlaca(e.target.value)}
-                                        style={{ padding: '6px 8px', borderRadius: 4, border: '1px solid #ccc', background: '#fff', color: '#222', fontSize: 14 }}
-                                    />
-                                    <Button 
-                                        color="white" 
-                                        variant='outline' 
-                                        _hover={{ bg: '#2f855a' }} 
-                                        bg='#38a169' 
-                                        onClick={handleSatSearch}
-                                        size="sm"
-                                        width="100%"
-                                    >
-                                        Buscar
-                                    </Button>
-                                </Box>
-                                {satError && (
-                                    <Text color="red.500" mt={2} textAlign="center" fontSize="sm">
-                                        {satError}
-                                    </Text>
-                                )}
+                        {/* Sección de consulta SAT manual - Siempre visible */}
+                        <Box mt={3} p={3} borderWidth={1} borderRadius={8} bg="#f0f8ff" width="100%">
+                            <Text fontWeight="bold" fontSize="md" mb={2} textAlign="center">Consulta SAT Manual</Text>
+                            <Box display="flex" flexDirection="column" gap={2}>
+                                <select
+                                    value={satTipo}
+                                    onChange={e => setSatTipo(e.target.value)}
+                                    style={{ padding: '6px 8px', borderRadius: 4, border: '1px solid #ccc', background: '#fff', color: '#222', fontSize: 14 }}
+                                >
+                                    <option value="">Selecciona tipo</option>
+                                    {plateOptions.map(option => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                                <input
+                                    placeholder="Placa"
+                                    value={satPlaca}
+                                    onChange={e => setSatPlaca(e.target.value)}
+                                    style={{ padding: '6px 8px', borderRadius: 4, border: '1px solid #ccc', background: '#fff', color: '#222', fontSize: 14 }}
+                                />
+                                <Button 
+                                    color="white" 
+                                    variant='outline' 
+                                    _hover={{ bg: '#2f855a' }} 
+                                    bg='#38a169' 
+                                    onClick={handleSatSearch}
+                                    size="sm"
+                                    width="100%"
+                                >
+                                    Buscar en SAT
+                                </Button>
                             </Box>
-                        )}
+                            {satError && (
+                                <Text color="red.500" mt={2} textAlign="center" fontSize="sm">
+                                    {satError}
+                                </Text>
+                            )}
+                        </Box>
                     </Box>
 
                     {/* Columna 3: Resultado SAT */}
                     <Box display="flex" flexDirection="column" justifyContent="flex-start">
                         {/* Resultado SAT automático */}
-                        {photoDetail && photoDetail.consultaVehiculo && !showSatInputs && (
+                        {photoDetail && photoDetail.consultaVehiculo && (
                             <Box p={3} borderWidth={1} borderRadius={8} bg="#f8f9fa" color="black" width="100%">
                                 <Text fontWeight='bold' fontSize="md" mb={3} textAlign="center" color="#22543d">Resultado SAT</Text>
                                 <Box as="dl" display="grid" gridTemplateColumns="100px 1fr" alignItems="center" borderRadius={8} overflow="hidden" fontSize="sm">
@@ -504,7 +486,7 @@ const PhotoScreen: React.FC = () => {
                         )}
 
                         {/* Error cuando no se encuentra información SAT */}
-                        {photoDetail && photoDetail.isSatVehicleInfoFound === false && showSatError && !showSatInputs && (
+                        {photoDetail && photoDetail.isSatVehicleInfoFound === false && showSatError && (
                             <Box 
                                 display="flex"
                                 flexDirection="row"
