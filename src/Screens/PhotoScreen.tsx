@@ -92,12 +92,13 @@ const PhotoScreen: React.FC = () => {
 
     const handleSatSearch = async () => {
         setSatError("");
-        setShowSatError(true);
         setSatVehicle(null);
         try {
             const vehicle = await VehicleService.consultarVehiculo(satPlaca, satTipo);
             if (vehicle && vehicle.PLACA) {
                 setSatVehicle(vehicle);
+                // Ocultar el mensaje de error automático cuando encontramos un vehículo manualmente
+                setShowSatError(false);
             } else {
                 setSatError("No se encontró información para los datos ingresados.");
             }
@@ -178,7 +179,9 @@ const PhotoScreen: React.FC = () => {
     };
 
     const processPhoto = async () => {
-        if (!photoDetail || !photoDetail.consultaVehiculo || !photo) return;
+        // Verificar que haya información SAT (automática O manual)
+        const hasSatInfo = photoDetail?.consultaVehiculo || satVehicle;
+        if (!photoDetail || !hasSatInfo || !photo) return;
         
         // Validar que los campos editables estén llenos
         if (!editLocation || !editDate || !editTime || !editSpeedLimit || !editMeasuredSpeed) {
@@ -189,18 +192,29 @@ const PhotoScreen: React.FC = () => {
         
         setLoading(true);
         try {
-            // Usar los valores editados en lugar de los originales del photoDetail
+            // Usar los valores editados y la información SAT correspondiente
+            // Si hay consulta manual, usar las partes separadas (satTipo + satPlaca)
+            // Si es automática, usar las partes que ya vienen separadas
+            const plateInfo = satVehicle ? {
+                lpNumber: satPlaca || "",               // Solo el número que escribió el usuario
+                lpType: satTipo || ""                   // Solo el tipo que seleccionó el usuario
+            } : {
+                lpNumber: photoDetail.plate_parts?.lpNumber || "",  // Número separado automáticamente
+                lpType: photoDetail.plate_parts?.lpType || ""       // Tipo separado automáticamente
+            };
+
             const params = {
                 cruise: editLocation,
                 timestamp: getDateTimeFromForm(editDate, editTime),
                 speed_limit_kmh: Number(editSpeedLimit),
                 current_speed_kmh: Number(editMeasuredSpeed),
-                lpNumber: photoDetail.plate_parts?.lpNumber || "",
-                lpType: photoDetail.plate_parts?.lpType || "",
+                lpNumber: plateInfo.lpNumber,
+                lpType: plateInfo.lpType,
                 photoId: photoDetail.id
             };
             
             console.log('📤 Enviando parámetros actualizados:', params);
+            console.log('🔍 Fuente de info SAT:', satVehicle ? 'Manual' : 'Automática');
             const data = await PhotosService.processPhoto(params);
             console.log(data);
             if (data.status === "processed") {
@@ -486,7 +500,7 @@ const PhotoScreen: React.FC = () => {
                         )}
 
                         {/* Error cuando no se encuentra información SAT */}
-                        {photoDetail && photoDetail.isSatVehicleInfoFound === false && showSatError && (
+                        {photoDetail && photoDetail.isSatVehicleInfoFound === false && showSatError && !satVehicle && (
                             <Box 
                                 display="flex"
                                 flexDirection="row"
