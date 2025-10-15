@@ -596,7 +596,7 @@ const PhotoScreen: React.FC = () => {
                                 <input
                                     placeholder="Placa"
                                     value={satPlaca}
-                                    onChange={e => setSatPlaca(e.target.value)}
+                                    onChange={e => setSatPlaca(e.target.value.toUpperCase())}
                                     style={{ padding: '6px 8px', borderRadius: 4, border: '1px solid #ccc', background: '#fff', color: '#222', fontSize: 14 }}
                                 />
                                 <Button 
