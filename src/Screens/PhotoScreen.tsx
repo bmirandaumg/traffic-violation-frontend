@@ -147,9 +147,6 @@ const PhotoScreen: React.FC = () => {
         setLoading(true);
         try {
             await PhotosService.deletePhoto(id);
-            // Al descartar una foto, limpiamos los filtros para empezar una nueva búsqueda
-            localStorage.removeItem('photos_filter_cruise');
-            localStorage.removeItem('photos_filter_date');
             navigate("/photos");
         } catch (error) {
             console.error("Error deleting photo:", error);
