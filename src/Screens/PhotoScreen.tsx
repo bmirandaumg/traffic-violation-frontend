@@ -50,6 +50,8 @@ const PhotoScreen: React.FC = () => {
                     setDate(dateObj.toLocaleDateString('es-ES'));
                     setTime(getUTCTimeWithSecondsFromISO(detail.timestamp));
                 }
+                // Reset del flag de búsqueda manual al cambiar foto
+                setHasManualSearch(false);
             } catch (error) {
                 console.error("Error al obtener el detalle de la foto:", error);
             } finally {
@@ -89,6 +91,8 @@ const PhotoScreen: React.FC = () => {
     const [satVehicle, setSatVehicle] = useState<Vehicle | null>(null);
     const [satError, setSatError] = useState<string>("");
     const [showSatError, setShowSatError] = useState<boolean>(true);
+    const [hasManualSearch, setHasManualSearch] = useState<boolean>(false);
+    const [satLoading, setSatLoading] = useState<boolean>(false);
 
     // Estados para zoom de imagen (nuevos - no afectan funcionalidad existente)
     const [zoomLevel, setZoomLevel] = useState<number>(1);
@@ -100,6 +104,8 @@ const PhotoScreen: React.FC = () => {
     const handleSatSearch = async () => {
         setSatError("");
         setSatVehicle(null);
+        setSatLoading(true);
+        setHasManualSearch(true);
         try {
             const vehicle = await VehicleService.consultarVehiculo(satPlaca, satTipo);
             if (vehicle && vehicle.PLACA) {
@@ -115,6 +121,8 @@ const PhotoScreen: React.FC = () => {
             } else {
                 setSatError("Error consultando el servicio SAT.");
             }
+        } finally {
+            setSatLoading(false);
         }
     };
 
@@ -599,8 +607,16 @@ const PhotoScreen: React.FC = () => {
                                     onClick={handleSatSearch}
                                     size="sm"
                                     width="100%"
+                                    disabled={satLoading}
                                 >
-                                    Buscar en SAT
+                                    {satLoading ? (
+                                        <>
+                                            <Spinner size="xs" mr={2} />
+                                            Consultando...
+                                        </>
+                                    ) : (
+                                        "Buscar en SAT"
+                                    )}
                                 </Button>
                             </Box>
                             {satError && (
@@ -613,8 +629,8 @@ const PhotoScreen: React.FC = () => {
 
                     {/* Columna 3: Resultado SAT */}
                     <Box display="flex" flexDirection="column" justifyContent="flex-start">
-                        {/* Resultado SAT automático */}
-                        {photoDetail && photoDetail.consultaVehiculo && (
+                        {/* Resultado SAT automático - Solo se muestra si NO hay búsqueda manual iniciada */}
+                        {photoDetail && photoDetail.consultaVehiculo && !satVehicle && !hasManualSearch && (
                             <Box p={3} borderWidth={1} borderRadius={8} bg="#f8f9fa" color="black" width="100%">
                                 <Text fontWeight='bold' fontSize="md" mb={3} textAlign="center" color="#374151">Resultado SAT</Text>
                                 <Box as="dl" display="grid" gridTemplateColumns="100px 1fr" alignItems="center" borderRadius={8} overflow="hidden" fontSize="sm">
