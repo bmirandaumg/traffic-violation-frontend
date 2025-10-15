@@ -15,14 +15,26 @@ const PhotosScreen: React.FC = () => {
     const [date, setDate] = useState<string>("");
     const [loading, setLoading] = useState<boolean>(true);
     const [hasAutoSearched, setHasAutoSearched] = useState<boolean>(false);
+    const [noPhotosMessage, setNoPhotosMessage] = useState<string>("");
     const navigate = useNavigate();
 
     const fetchPhotos = async (cruise_id: number, date: string, page: number) => {
         try {
             setLoading(true);
+            setNoPhotosMessage(""); // Limpiar mensaje anterior
+            
             const data = await PhotosService.getAll(cruise_id, date, page);
             console.log(data);
-            setPhotos(data);
+            
+            // Verificar SOLO si es array vacío (manteniendo lógica original)
+            if (Array.isArray(data) && data.length === 0) {
+                setPhotos([]);
+                setNoPhotosMessage(`No se encontraron fotos para la fecha ${date} en el crucero seleccionado`);
+            } else {
+                // Lógica original intacta
+                setPhotos(data);
+                setNoPhotosMessage("");
+            }
             
             // Guardar filtros en localStorage para persistencia
             localStorage.setItem('photos_filter_cruise', cruise_id.toString());
@@ -168,6 +180,26 @@ const PhotosScreen: React.FC = () => {
 
 
                     </Box>
+
+                    {/* Mensaje cuando no hay fotos - SOLO cuando hay mensaje */}
+                    {noPhotosMessage && (
+                        <Box 
+                            textAlign="center" 
+                            py={8} 
+                            mt={8}
+                            borderWidth="2px" 
+                            borderRadius="lg" 
+                            borderColor="orange.200"
+                            backgroundColor="orange.50"
+                        >
+                            <Text fontSize="lg" color="orange.600" fontWeight="medium">
+                                📷 {noPhotosMessage}
+                            </Text>
+                            <Text fontSize="sm" color="gray.500" mt={2}>
+                                Intenta con otra fecha o crucero
+                            </Text>
+                        </Box>
+                    )}
 
                     {photos && <Grid templateColumns="repeat(auto-fill, minmax(200px, 1fr))" gap={6}>
                         {photos.map((photo, index) => (
