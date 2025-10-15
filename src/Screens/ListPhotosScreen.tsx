@@ -8,6 +8,35 @@ import { useNavigate } from "react-router-dom";
 type CruiseItem = { label: string; value: number };
 type CruiseCollection = ReturnType<typeof createListCollection<CruiseItem>>;
 
+// Función para validar que la fecha esté completa
+const isValidCompleteDate = (dateString: string): boolean => {
+    if (!dateString) return false;
+    
+    // Formato YYYY-MM-DD (input type="date")
+    const isoDateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (isoDateRegex.test(dateString)) {
+        const date = new Date(dateString);
+        const year = date.getFullYear();
+        // Validar que sea una fecha válida Y que el año sea realista (entre 1900 y 2100)
+        return !isNaN(date.getTime()) && year >= 1900 && year <= 2100;
+    }
+    
+    // Formato DD/MM/YYYY
+    const ddmmyyyyRegex = /^\d{2}\/\d{2}\/\d{4}$/;
+    if (ddmmyyyyRegex.test(dateString)) {
+        const [day, month, year] = dateString.split('/').map(Number);
+        const date = new Date(year, month - 1, day);
+        // Validar que sea una fecha válida Y que el año sea realista
+        return !isNaN(date.getTime()) && 
+               date.getDate() === day && 
+               date.getMonth() === month - 1 && 
+               date.getFullYear() === year &&
+               year >= 1900 && year <= 2100;
+    }
+    
+    return false;
+};
+
 const PhotosScreen: React.FC = () => {
     const [photos, setPhotos] = useState<Photo[]>([]);
     const [cruiseCollection, setCruiseCollection] = useState<CruiseCollection | undefined>(undefined);
@@ -85,7 +114,7 @@ const PhotosScreen: React.FC = () => {
 
     // Búsqueda automática cuando se restauran los filtros y ya están los cruceros cargados (solo una vez)
     useEffect(() => {
-        if (selectedCruise && date && cruiseCollection && !hasAutoSearched) {
+        if (selectedCruise && date && cruiseCollection && !hasAutoSearched && isValidCompleteDate(date)) {
             setHasAutoSearched(true);
             // Usar setTimeout para evitar conflictos con el loading state
             setTimeout(() => {
@@ -121,7 +150,7 @@ const PhotosScreen: React.FC = () => {
                         <Select.Root
                             collection={cruiseCollection as CruiseCollection}
                             size="sm"
-                            width="320px"
+                            width="420px"
                             color='black'
                             multiple={false}
                             value={selectedCruise ? [selectedCruise] : []}
