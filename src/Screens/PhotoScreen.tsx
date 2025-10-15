@@ -328,10 +328,11 @@ const PhotoScreen: React.FC = () => {
                             <Button 
                                 color="white" 
                                 variant='outline' 
-                                _hover={{ bg: '#4cae4f' }} 
-                                bg='#5cb85c' 
+                                _hover={{ bg: '#15803D' }} 
+                                bg='#16A34A' 
                                 onClick={processPhoto} 
                                 size="sm"
+                                fontWeight="bold"
                             >
                                 Procesar
                             </Button>
@@ -343,16 +344,18 @@ const PhotoScreen: React.FC = () => {
                                 _hover={{ bg: '#c82333' }} 
                                 bg='#dc3545'
                                 size="sm"
+                                fontWeight="bold"
                             >
                                 Descartar
                             </Button>
                             <Button 
                                 color="white"
                                 variant="outline"
-                                bg="#83D00D"
-                                _hover={{ bg: "#6bb300" }}
+                                bg="#FBBF24"
+                                _hover={{ bg: "#F59E0B" }}
                                 onClick={handleUnblockAndReturn}
                                 size="sm"
+                                fontWeight="bold"
                             >
                                 Regresar
                             </Button>
@@ -449,8 +452,8 @@ const PhotoScreen: React.FC = () => {
                                 <Button 
                                     color="white" 
                                     variant='outline' 
-                                    _hover={{ bg: '#2f855a' }} 
-                                    bg='#38a169' 
+                                    _hover={{ bg: '#1184f7ff' }} 
+                                    bg='#1173d5ff' 
                                     onClick={handleSatSearch}
                                     size="sm"
                                     width="100%"
@@ -471,7 +474,7 @@ const PhotoScreen: React.FC = () => {
                         {/* Resultado SAT automático */}
                         {photoDetail && photoDetail.consultaVehiculo && (
                             <Box p={3} borderWidth={1} borderRadius={8} bg="#f8f9fa" color="black" width="100%">
-                                <Text fontWeight='bold' fontSize="md" mb={3} textAlign="center" color="#22543d">Resultado SAT</Text>
+                                <Text fontWeight='bold' fontSize="md" mb={3} textAlign="center" color="#374151">Resultado SAT</Text>
                                 <Box as="dl" display="grid" gridTemplateColumns="100px 1fr" alignItems="center" borderRadius={8} overflow="hidden" fontSize="sm">
                                     {[
                                         { label: 'Tipo', value: photoDetail.consultaVehiculo.TIPO },
@@ -484,10 +487,10 @@ const PhotoScreen: React.FC = () => {
                                         { label: 'CC', value: photoDetail.consultaVehiculo.CC },
                                     ].map((item, idx) => (
                                         <React.Fragment key={item.label}>
-                                            <Box as="dt" fontWeight="bold" textAlign="right" px={1} py={1} bg={idx % 2 === 0 ? '#38a169' : 'transparent'} color={idx % 2 === 0 ? 'white' : '#22543d'}>
+                                            <Box as="dt" fontWeight="bold" textAlign="right" px={1} py={1} bg={idx % 2 === 0 ? '#e2e8f0' : '#fff'} color="#4a5568">
                                                 {item.label}:
                                             </Box>
-                                            <Box as="dd" px={1} py={1} bg={idx % 2 === 0 ? '#38a169' : 'transparent'} color={idx % 2 === 0 ? 'white' : '#22543d'}>
+                                            <Box as="dd" px={1} py={1} bg={idx % 2 === 0 ? '#e2e8f0' : '#fff'} color="#000">
                                                 {item.value}
                                             </Box>
                                         </React.Fragment>
@@ -520,7 +523,7 @@ const PhotoScreen: React.FC = () => {
                         {/* Resultado de consulta SAT manual */}
                         {satVehicle && (
                             <Box mt={2} p={3} borderWidth={1} borderRadius={8} bg="#f8f9fa" color="black" width="100%">
-                                <Text fontWeight='bold' fontSize="md" mb={3} textAlign="center" color="#22543d">Resultado SAT Manual</Text>
+                                <Text fontWeight='bold' fontSize="md" mb={3} textAlign="center" color="#374151">Resultado SAT Manual</Text>
                                 <Box as="dl" display="grid" gridTemplateColumns="100px 1fr" alignItems="center" borderRadius={8} overflow="hidden" fontSize="sm">
                                     {[ 
                                         { label: 'Estado', value: satVehicle.ESTADO },
@@ -534,10 +537,10 @@ const PhotoScreen: React.FC = () => {
                                         { label: 'CC', value: satVehicle.CC },
                                     ].map((item, idx) => (
                                         <React.Fragment key={item.label}>
-                                            <Box as="dt" fontWeight="bold" textAlign="right" px={1} py={1} bg={idx % 2 === 0 ? '#38a169' : 'transparent'} color={idx % 2 === 0 ? 'white' : '#22543d'}>
+                                            <Box as="dt" fontWeight="bold" textAlign="right" px={1} py={1} bg={idx % 2 === 0 ? '#e2e8f0' : '#fff'} color="#4a5568">
                                                 {item.label}:
                                             </Box>
-                                            <Box as="dd" px={1} py={1} bg={idx % 2 === 0 ? '#38a169' : 'transparent'} color={idx % 2 === 0 ? 'white' : '#22543d'}>
+                                            <Box as="dd" px={1} py={1} bg={idx % 2 === 0 ? '#e2e8f0' : '#fff'} color="#000">
                                                 {item.value}
                                             </Box>
                                         </React.Fragment>
