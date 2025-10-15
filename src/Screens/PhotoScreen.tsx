@@ -90,6 +90,13 @@ const PhotoScreen: React.FC = () => {
     const [satError, setSatError] = useState<string>("");
     const [showSatError, setShowSatError] = useState<boolean>(true);
 
+    // Estados para zoom de imagen (nuevos - no afectan funcionalidad existente)
+    const [zoomLevel, setZoomLevel] = useState<number>(1);
+    const [isDragging, setIsDragging] = useState<boolean>(false);
+    const [dragStart, setDragStart] = useState<{x: number, y: number}>({x: 0, y: 0});
+    const [imagePosition, setImagePosition] = useState<{x: number, y: number}>({x: 0, y: 0});
+    const [imageContainerRef, setImageContainerRef] = useState<HTMLDivElement | null>(null);
+
     const handleSatSearch = async () => {
         setSatError("");
         setSatVehicle(null);
@@ -275,6 +282,87 @@ const PhotoScreen: React.FC = () => {
       return `${normalizedHour}:${minutes}:${seconds}`;
     }
 
+    // Effect para manejar eventos de scroll de manera agresiva
+    useEffect(() => {
+        if (!imageContainerRef) return;
+
+        const handleWheelAgressive = (e: WheelEvent) => {
+            // Bloqueo completo y agresivo del scroll
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            
+            const delta = e.deltaY > 0 ? -0.1 : 0.1;
+            const newZoom = Math.max(0.5, Math.min(3, zoomLevel + delta));
+            setZoomLevel(newZoom);
+            
+            // Reset position si volvemos a zoom normal
+            if (newZoom === 1) {
+                setImagePosition({x: 0, y: 0});
+            }
+            
+            return false;
+        };
+
+        // Añadir listener con capture=true para interceptar antes que cualquier otro elemento
+        imageContainerRef.addEventListener('wheel', handleWheelAgressive, { 
+            passive: false, 
+            capture: true 
+        });
+
+        // Cleanup
+        return () => {
+            if (imageContainerRef) {
+                imageContainerRef.removeEventListener('wheel', handleWheelAgressive, { capture: true });
+            }
+        };
+    }, [imageContainerRef, zoomLevel, setZoomLevel, setImagePosition]);
+
+    // Funciones para manejo de zoom (nuevas - no afectan funcionalidad existente)
+    const handleWheel = (e: React.WheelEvent) => {
+        // Backup handler - el agresivo debería manejar todo
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const delta = e.deltaY > 0 ? -0.1 : 0.1;
+        const newZoom = Math.max(0.5, Math.min(3, zoomLevel + delta));
+        setZoomLevel(newZoom);
+        
+        // Reset position si volvemos a zoom normal
+        if (newZoom === 1) {
+            setImagePosition({x: 0, y: 0});
+        }
+    };
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+        if (zoomLevel > 1) {
+            setIsDragging(true);
+            setDragStart({ 
+                x: e.clientX - imagePosition.x, 
+                y: e.clientY - imagePosition.y 
+            });
+        }
+    };
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        if (isDragging && zoomLevel > 1) {
+            setImagePosition({
+                x: e.clientX - dragStart.x,
+                y: e.clientY - dragStart.y
+            });
+        }
+    };
+
+    const handleMouseUp = () => {
+        setIsDragging(false);
+    };
+
+    const resetZoom = () => {
+        setZoomLevel(1);
+        setImagePosition({x: 0, y: 0});
+        setIsDragging(false);
+    };
+
     return (
         <Box p={4} backgroundColor="white" minH="100vh" color="black">
             <Text fontSize="2xl" mb={4} fontWeight="bold">
@@ -310,18 +398,72 @@ const PhotoScreen: React.FC = () => {
                     {/* Columna 1: Foto y botones */}
                     <Box display="flex" flexDirection="column" alignItems="center" justifyContent="flex-start">
                         {photo_base64 && (
-                            <Box display="flex" justifyContent="center" alignItems="center" width="100%" mb={3}>
-                                <Image
-                                    src={`data:image/png;base64,${photo_base64}`}
-                                    alt="Foto"
-                                    maxWidth="550px"
-                                    maxHeight="400px"
+                            <Box width="100%" mb={3}>
+                                {/* Contenedor con zoom */}
+                                <Box 
+                                    ref={setImageContainerRef}
+                                    position="relative"
+                                    overflow="hidden"
+                                    cursor={zoomLevel > 1 ? (isDragging ? "grabbing" : "grab") : "zoom-in"}
+                                    onWheel={handleWheel}
+                                    onMouseDown={handleMouseDown}
+                                    onMouseMove={handleMouseMove}
+                                    onMouseUp={handleMouseUp}
+                                    onMouseLeave={handleMouseUp}
+                                    display="flex"
+                                    justifyContent="center"
+                                    alignItems="center"
                                     width="100%"
-                                    height="auto"
-                                    objectFit="contain"
+                                    maxHeight="400px"
                                     borderRadius={8}
-                                    boxShadow="md"
-                                />
+                                    border="2px solid transparent"
+                                    style={{
+                                        // Bloqueo agresivo de scroll y touch
+                                        touchAction: 'none',
+                                        overscrollBehavior: 'contain',
+                                        scrollbarWidth: 'none',
+                                        msOverflowStyle: 'none'
+                                    }}
+                                    _hover={{
+                                        borderColor: zoomLevel > 1 ? "#3182ce" : "#e2e8f0"
+                                    }}
+                                >
+                                    <Image
+                                        src={`data:image/png;base64,${photo_base64}`}
+                                        alt="Foto"
+                                        maxWidth="550px"
+                                        maxHeight="400px"
+                                        width="100%"
+                                        height="auto"
+                                        objectFit="contain"
+                                        borderRadius={8}
+                                        boxShadow="md"
+                                        transform={`scale(${zoomLevel}) translate(${imagePosition.x / zoomLevel}px, ${imagePosition.y / zoomLevel}px)`}
+                                        transformOrigin="center"
+                                        transition="transform 0.1s ease-out"
+                                        userSelect="none"
+                                        draggable={false}
+                                    />
+                                </Box>
+                                
+                                {/* Indicadores de zoom */}
+                                {zoomLevel !== 1 && (
+                                    <Box textAlign="center" mt={2}>
+                                        <Text fontSize="xs" color="gray.600">
+                                            Zoom: {Math.round(zoomLevel * 100)}% | Scroll: ±Zoom | 
+                                            {zoomLevel > 1 ? " Arrastra: Mover |" : ""} 
+                                            <Text 
+                                                as="span" 
+                                                color="blue.500" 
+                                                cursor="pointer" 
+                                                onClick={resetZoom}
+                                                _hover={{ textDecoration: "underline" }}
+                                            >
+                                                Reset
+                                            </Text>
+                                        </Text>
+                                    </Box>
+                                )}
                             </Box>
                         )}
                         <Box width="100%" display="flex" flexDirection="column" gap={2} mt={2} alignItems="stretch">
