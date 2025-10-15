@@ -86,14 +86,8 @@ const PhotosScreen: React.FC = () => {
 
     const fetchCruises = async () => {
         try {
-            // Solo mostrar loading si no hay datos cached que puedan causar auto-búsqueda
-            const savedCruise = localStorage.getItem('photos_filter_cruise');
-            const savedDate = localStorage.getItem('photos_filter_date');
-            const hasValidCache = savedCruise && savedDate && isValidCompleteDate(savedDate);
-            
-            if (!hasValidCache) {
-                setLoading(true);
-            }
+            // El control de loading inicial ya maneja el cache, aquí solo cargamos cruceros
+            setLoading(true);
             
             const cruises = await CruiseService.get();
             const cruiseItems: CruiseItem[] = cruises.map((cruise) => ({
