@@ -42,14 +42,22 @@ const PhotosScreen: React.FC = () => {
     const [cruiseCollection, setCruiseCollection] = useState<CruiseCollection | undefined>(undefined);
     const [selectedCruise, setSelectedCruise] = useState<string>("");
     const [date, setDate] = useState<string>("");
-    const [loading, setLoading] = useState<boolean>(true);
+    // Inicializar con loading: false si hay datos en localStorage (evita parpadeo)
+    const [loading, setLoading] = useState<boolean>(() => {
+        const savedCruise = localStorage.getItem('photos_filter_cruise');
+        const savedDate = localStorage.getItem('photos_filter_date');
+        // Solo loading si NO hay datos guardados
+        return !(savedCruise && savedDate && isValidCompleteDate(savedDate));
+    });
     const [hasAutoSearched, setHasAutoSearched] = useState<boolean>(false);
     const [noPhotosMessage, setNoPhotosMessage] = useState<string>("");
     const navigate = useNavigate();
 
-    const fetchPhotos = async (cruise_id: number, date: string, page: number) => {
+    const fetchPhotos = async (cruise_id: number, date: string, page: number, showLoading: boolean = true) => {
         try {
-            setLoading(true);
+            if (showLoading) {
+                setLoading(true);
+            }
             setNoPhotosMessage(""); // Limpiar mensaje anterior
             
             const data = await PhotosService.getAll(cruise_id, date, page);
@@ -78,7 +86,15 @@ const PhotosScreen: React.FC = () => {
 
     const fetchCruises = async () => {
         try {
-            setLoading(true);
+            // Solo mostrar loading si no hay datos cached que puedan causar auto-búsqueda
+            const savedCruise = localStorage.getItem('photos_filter_cruise');
+            const savedDate = localStorage.getItem('photos_filter_date');
+            const hasValidCache = savedCruise && savedDate && isValidCompleteDate(savedDate);
+            
+            if (!hasValidCache) {
+                setLoading(true);
+            }
+            
             const cruises = await CruiseService.get();
             const cruiseItems: CruiseItem[] = cruises.map((cruise) => ({
                 label: cruise.cruise_name,
@@ -117,8 +133,9 @@ const PhotosScreen: React.FC = () => {
         if (selectedCruise && date && cruiseCollection && !hasAutoSearched && isValidCompleteDate(date)) {
             setHasAutoSearched(true);
             // Usar setTimeout para evitar conflictos con el loading state
+            // showLoading: false para evitar parpadeo en la auto-búsqueda
             setTimeout(() => {
-                fetchPhotos(parseInt(selectedCruise), date, 1);
+                fetchPhotos(parseInt(selectedCruise), date, 1, false);
             }, 100);
         }
     }, [selectedCruise, date, cruiseCollection, hasAutoSearched]);

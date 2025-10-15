@@ -159,14 +159,13 @@ const PhotoScreen: React.FC = () => {
 
     const handleDeletePhoto = async (id: number) => {
         if (!photoDetail || !photoDetail.id) return;
-        setLoading(true);
+        // No mostrar loading para operaciones que navegan inmediatamente
         try {
             await PhotosService.deletePhoto(id);
             navigate("/photos");
         } catch (error) {
             console.error("Error deleting photo:", error);
-        } finally {
-            setLoading(false);
+            // Solo mostrar loading si hay error y nos quedamos en la pantalla
         }
     };
 
@@ -176,7 +175,7 @@ const PhotoScreen: React.FC = () => {
     }));
 
     const handleUnblockAndReturn = async () => {
-        setLoading(true);
+        // No mostrar loading para operaciones que navegan inmediatamente
         setUnblockError(null);
         try {
             await PhotosService.unBlockPhoto(photoDetail!.id);
@@ -185,8 +184,7 @@ const PhotoScreen: React.FC = () => {
         } catch (error) {
             console.error("Ocurrió un error al liberar la foto", error);
             setUnblockError("Error al liberar la foto");
-        } finally {
-            setLoading(false);
+            // Solo mostrar error, no loading
         }
     };
 
@@ -230,17 +228,18 @@ const PhotoScreen: React.FC = () => {
             const data = await PhotosService.processPhoto(params);
             console.log(data);
             if (data.status === "processed") {
-                // Al procesar exitosamente, mantenemos los filtros para continuar con la siguiente foto
+                // Al procesar exitosamente, navegar directamente sin quitar loading
+                // (evita parpadeo de spinner → contenido → nueva pantalla)
                 navigate("/photos");
             } else {
                 setProcessErrorMsg('No se pudo procesar la foto. Intenta nuevamente.');
                 setShowProcessError(true);
+                setLoading(false);
             }
         } catch (error) {
             console.error("Error processing photo:", error);
             setProcessErrorMsg('No hay conexión con el servicio o ocurrió un error.');
             setShowProcessError(true);
-        } finally {
             setLoading(false);
         }
     };
