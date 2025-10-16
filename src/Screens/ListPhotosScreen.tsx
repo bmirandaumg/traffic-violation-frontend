@@ -1,12 +1,9 @@
 //Screen basic whit a list of photos
 import React, { useEffect, useState } from 'react';
-import { Box, Grid, Image, Spinner, Text, Select, createListCollection, Portal, Input, Field, Button } from '@chakra-ui/react';
-import { CruiseService } from '@/services/cruise.service';
+import { Box, Grid, Image, Spinner, Text, Input, Field, Button } from '@chakra-ui/react';
+import { CruiseService, type Cruise } from '@/services/cruise.service';
 import { PhotosService, type Photo } from '@/services/photos.service';
 import { useNavigate } from "react-router-dom";
-
-type CruiseItem = { label: string; value: number };
-type CruiseCollection = ReturnType<typeof createListCollection<CruiseItem>>;
 
 // Función para validar que la fecha esté completa
 const isValidCompleteDate = (dateString: string): boolean => {
@@ -39,7 +36,7 @@ const isValidCompleteDate = (dateString: string): boolean => {
 
 const PhotosScreen: React.FC = () => {
     const [photos, setPhotos] = useState<Photo[]>([]);
-    const [cruiseCollection, setCruiseCollection] = useState<CruiseCollection | undefined>(undefined);
+    const [cruises, setCruises] = useState<Cruise[]>([]);
     const [selectedCruise, setSelectedCruise] = useState<string>("");
     const [date, setDate] = useState<string>("");
     // Inicializar con loading: false si hay datos en localStorage (evita parpadeo)
@@ -86,18 +83,9 @@ const PhotosScreen: React.FC = () => {
 
     const fetchCruises = async () => {
         try {
-            // El control de loading inicial ya maneja el cache, aquí solo cargamos cruceros
             setLoading(true);
-            
-            const cruises = await CruiseService.get();
-            const cruiseItems: CruiseItem[] = cruises.map((cruise) => ({
-                label: cruise.cruise_name,
-                value: cruise.id,
-            }));
-            const cruiseCollection = createListCollection<CruiseItem>({
-                items: cruiseItems,
-            });
-            setCruiseCollection(cruiseCollection);
+            const cruisesData = await CruiseService.get();
+            setCruises(cruisesData);
         } catch (error) {
             console.error("Error fetching cruises:", error);
         } finally {
@@ -124,7 +112,7 @@ const PhotosScreen: React.FC = () => {
 
     // Búsqueda automática cuando se restauran los filtros y ya están los cruceros cargados (solo una vez)
     useEffect(() => {
-        if (selectedCruise && date && cruiseCollection && !hasAutoSearched && isValidCompleteDate(date)) {
+        if (selectedCruise && date && cruises.length > 0 && !hasAutoSearched && isValidCompleteDate(date)) {
             setHasAutoSearched(true);
             // Usar setTimeout para evitar conflictos con el loading state
             // showLoading: false para evitar parpadeo en la auto-búsqueda
@@ -132,7 +120,7 @@ const PhotosScreen: React.FC = () => {
                 fetchPhotos(parseInt(selectedCruise), date, 1, false);
             }, 100);
         }
-    }, [selectedCruise, date, cruiseCollection, hasAutoSearched]);
+    }, [selectedCruise, date, cruises, hasAutoSearched]);
 
 
     const onPressPhoto = async (photo: Photo) => {
@@ -158,42 +146,38 @@ const PhotosScreen: React.FC = () => {
                         justifyContent="space-between"
                         alignItems="center"
                         w="90%" gap="2">
-                        <Select.Root
-                            collection={cruiseCollection as CruiseCollection}
-                            size="sm"
-                            width="420px"
-                            color='black'
-                            multiple={false}
-                            value={selectedCruise ? [selectedCruise] : []}
-                            onValueChange={(e) => {
-                                const [val] = e.value
-                                setSelectedCruise(val)
-                            }}
-                            disabled={!cruiseCollection}
-                        >
-                            <Select.HiddenSelect />
-                            <Select.Label>Crucero</Select.Label>
-                            <Select.Control>
-                                <Select.Trigger>
-                                    <Select.ValueText placeholder="Selecciona un crucero" />
-                                </Select.Trigger>
-                                <Select.IndicatorGroup>
-                                    <Select.Indicator />
-                                </Select.IndicatorGroup>
-                            </Select.Control>
-                            <Portal>
-                                <Select.Positioner>
-                                    <Select.Content>
-                                        {cruiseCollection?.items.map((cruise: CruiseItem) => (
-                                            <Select.Item item={cruise} key={cruise.value}>
-                                                {cruise.label}
-                                                <Select.ItemIndicator />
-                                            </Select.Item>
-                                        ))}
-                                    </Select.Content>
-                                </Select.Positioner>
-                            </Portal>
-                        </Select.Root>
+                        <Box>
+                            <Text fontSize="sm" mb={1} fontWeight="medium">Crucero</Text>
+                            {cruises.length > 0 ? (
+                                <select 
+                                    value={selectedCruise} 
+                                    onChange={(e) => setSelectedCruise(e.target.value)}
+                                    style={{
+                                        width: "420px",
+                                        height: "40px",
+                                        padding: "8px 12px",
+                                        border: "1px solid #d1d5db",
+                                        borderRadius: "6px",
+                                        fontSize: "14px",
+                                        backgroundColor: "white",
+                                        color: "black",
+                                        outline: "none",
+                                        cursor: "pointer"
+                                    }}
+                                >
+                                    <option value="">Selecciona un crucero</option>
+                                    {cruises.map((cruise) => (
+                                        <option key={cruise.id} value={cruise.id}>
+                                            {cruise.cruise_name}
+                                        </option>
+                                    ))}
+                                </select>
+                            ) : (
+                                <Box width="420px" height="40px" bg="gray.100" borderRadius="md" display="flex" alignItems="center" px={3}>
+                                    <Text color="gray.500" fontSize="sm">Cargando cruceros...</Text>
+                                </Box>
+                            )}
+                        </Box>
 
                         <Field.Root >
                             <Field.Label>Fecha</Field.Label>
