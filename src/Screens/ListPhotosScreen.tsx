@@ -1,6 +1,6 @@
 //Screen basic whit a list of photos
 import React, { useEffect, useState } from 'react';
-import { Box, Grid, Image, Spinner, Text, Input, Field, Button } from '@chakra-ui/react';
+import { Box, Grid, Image, Spinner, Text, Button } from '@chakra-ui/react';
 import { CruiseService, type Cruise } from '@/services/cruise.service';
 import { PhotosService, type Photo } from '@/services/photos.service';
 import { useNavigate } from "react-router-dom";
@@ -135,25 +135,26 @@ const PhotosScreen: React.FC = () => {
 
     return (
         <Box p={4} backgroundColor="white" minH="100vh">
-            <Text fontSize="2xl" mb={4} fontWeight="bold">
-                Photos
+            <Text fontSize="2xl" mb={4} fontWeight="bold" color={"black"}>
+                Fotos
             </Text>
             {loading ? (
                 <Spinner size="xl" />
             ) : (
                 <>
                     <Box display="flex" flexDirection="row"
-                        justifyContent="space-between"
-                        alignItems="center"
-                        w="90%" gap="2">
+                        alignItems="end"
+                        justifyContent="center"
+                        w="100%" gap="4"
+                        flexWrap="wrap">
                         <Box>
-                            <Text fontSize="sm" mb={1} fontWeight="medium">Crucero</Text>
+                            <Text fontSize="sm" color={'black'} mb={1} fontWeight="medium">Crucero</Text>
                             {cruises.length > 0 ? (
                                 <select 
                                     value={selectedCruise} 
                                     onChange={(e) => setSelectedCruise(e.target.value)}
                                     style={{
-                                        width: "420px",
+                                        width: "280px",
                                         height: "40px",
                                         padding: "8px 12px",
                                         border: "1px solid #d1d5db",
@@ -173,19 +174,33 @@ const PhotosScreen: React.FC = () => {
                                     ))}
                                 </select>
                             ) : (
-                                <Box width="420px" height="40px" bg="gray.100" borderRadius="md" display="flex" alignItems="center" px={3}>
+                                <Box width="280px" height="40px" bg="gray.100" borderRadius="md" display="flex" alignItems="center" px={3}>
                                     <Text color="gray.500" fontSize="sm">Cargando cruceros...</Text>
                                 </Box>
                             )}
                         </Box>
 
-                        <Field.Root >
-                            <Field.Label>Fecha</Field.Label>
-                            <Input placeholder="Fecha" type='date' color='black'
+                        <Box>
+                            <Text fontSize="sm" color={'black'} mb={1} fontWeight="medium">Fecha</Text>
+                            <input 
+                                type="date" 
+                                placeholder="Fecha"
                                 value={date}
                                 onChange={(e) => setDate(e.target.value)}
+                                style={{
+                                    width: "180px",
+                                    height: "40px",
+                                    padding: "8px 12px",
+                                    border: "1px solid #d1d5db",
+                                    borderRadius: "6px",
+                                    fontSize: "14px",
+                                    backgroundColor: "white",
+                                    color: "black",
+                                    outline: "none",
+                                    cursor: "pointer"
+                                }}
                             />
-                        </Field.Root>
+                        </Box>
 
                         <Button 
                             alignSelf='flex-end' 
