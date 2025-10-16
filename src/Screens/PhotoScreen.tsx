@@ -102,6 +102,12 @@ const PhotoScreen: React.FC = () => {
     const [imageContainerRef, setImageContainerRef] = useState<HTMLDivElement | null>(null);
 
     const handleSatSearch = async () => {
+        // Validar que ambos campos estén completados
+        if (!satTipo || !satPlaca) {
+            setSatError("Por favor complete el tipo de placa y el número de placa antes de buscar.");
+            return;
+        }
+        
         setSatError("");
         setSatVehicle(null);
         setSatLoading(true);
@@ -189,13 +195,24 @@ const PhotoScreen: React.FC = () => {
     };
 
     const processPhoto = async () => {
-        // Verificar que haya información SAT (automática O manual)
-        const hasSatInfo = photoDetail?.consultaVehiculo || satVehicle;
-        if (!photoDetail || !hasSatInfo || !photo) return;
+        // Validación 1: Datos básicos necesarios
+        if (!photoDetail || !photo) {
+            setProcessErrorMsg('Error: No se encontró información de la foto.');
+            setShowProcessError(true);
+            return;
+        }
         
-        // Validar que los campos editables estén llenos
+        // Validación 2: Campos del formulario completados
         if (!editLocation || !editDate || !editTime || !editSpeedLimit || !editMeasuredSpeed) {
             setProcessErrorMsg('Por favor complete todos los campos antes de procesar.');
+            setShowProcessError(true);
+            return;
+        }
+        
+        // Validación 3: Información SAT (automática O manual)
+        const hasSatInfo = photoDetail?.consultaVehiculo || satVehicle;
+        if (!hasSatInfo) {
+            setProcessErrorMsg('Se requiere información del vehículo SAT. Realice una búsqueda manual');
             setShowProcessError(true);
             return;
         }
@@ -375,23 +392,6 @@ const PhotoScreen: React.FC = () => {
             <Text fontSize="2xl" mb={4} fontWeight="bold">
                 Foto
             </Text>
-            {showProcessError && (
-                <Box 
-                    background="#fff5f5" 
-                    border="1px solid #feb2b2" 
-                    color="#c53030" 
-                    borderRadius={8} 
-                    mb={4} 
-                    p={4} 
-                    position="relative"
-                    display="flex"
-                    alignItems="center"
-                >
-                    <Box fontWeight="bold" fontSize="lg" mr={2}>Error de conexión</Box>
-                    <Box flex="1">{processErrorMsg}</Box>
-                    <CloseButton position="absolute" right="8px" top="8px" onClick={() => setShowProcessError(false)} />
-                </Box>
-            )}
             {loading ? (
                 <Spinner size="xl" />
             ) : (
@@ -509,6 +509,23 @@ const PhotoScreen: React.FC = () => {
                                 Regresar
                             </Button>
                         </Box>
+                        {/* Mensaje de error del procesamiento */}
+                        {showProcessError && (
+                            <Box 
+                                background="#fff5f5" 
+                                border="1px solid #feb2b2" 
+                                color="#c53030" 
+                                borderRadius={8} 
+                                mt={3} 
+                                p={3} 
+                                position="relative"
+                                fontSize="sm"
+                            >
+                                <Box fontWeight="bold" mb={1}>Error de procesamiento</Box>
+                                <Box>{processErrorMsg}</Box>
+                                <CloseButton position="absolute" right="8px" top="8px" size="sm" onClick={() => setShowProcessError(false)} />
+                            </Box>
+                        )}
                         {unblockError && (
                             <Text color="red.500" mt={2} textAlign="center" fontSize="sm">
                                 {unblockError}
@@ -517,7 +534,7 @@ const PhotoScreen: React.FC = () => {
                     </Box>
 
                     {/* Columna 2: Información del Vehículo */}
-                    <Box display="flex" flexDirection="column" justifyContent="flex-start">
+                   <Box display="flex" flexDirection="column" justifyContent="flex-start">
                         {photoDetail && (
                             <Box p={3} borderWidth={1} borderRadius={8} bg="#f8f9fa" color="black" width="100%">
                                 <Text fontWeight="bold" fontSize="md" mb={3} textAlign="center">Información del Vehículo</Text>
@@ -619,7 +636,7 @@ const PhotoScreen: React.FC = () => {
                                 </Button>
                             </Box>
                             {satError && (
-                                <Text color="red.500" mt={2} textAlign="center" fontSize="sm">
+                                 <Text color="red.500" mt={2} textAlign="center" fontSize="sm">
                                     {satError}
                                 </Text>
                             )}
