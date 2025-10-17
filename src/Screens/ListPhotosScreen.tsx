@@ -135,7 +135,7 @@ const PhotosScreen: React.FC = () => {
 
     return (
         <Box p={4} backgroundColor="white" minH="100vh">
-            <Text fontSize="2xl" mb={4} fontWeight="bold" color={"black"}>
+            <Text fontSize="2xl" mb={4} fontWeight="bold" color={"black"} justifyContent={"center"} textAlign="center">
                 Fotos
             </Text>
             {loading ? (

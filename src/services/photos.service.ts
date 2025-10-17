@@ -56,11 +56,6 @@ export const PhotosService = {
     return data[0];
   },
 
-  deletePhoto: async (id: number) => {
-    const { data } = await api.delete(`/photos/${id}`);
-    return data;
-  },
-
   rejectPhoto: async (photoId: number, rejectionReasonId: number, userId: number) => {
     const body = { photoId, rejectionReasonId, userId };
     const { data } = await api.post('/processed-photo/reject-photo', body);

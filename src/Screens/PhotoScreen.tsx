@@ -399,8 +399,8 @@ const PhotoScreen: React.FC = () => {
 
     return (
         <Box p={4} backgroundColor="white" minH="100vh" color="black">
-            <Text fontSize="2xl" mb={4} fontWeight="bold">
-                Foto
+            <Text fontSize="2xl" mb={4} fontWeight="bold" justifyContent={"center"} textAlign="center">
+                Multa
             </Text>
             {loading ? (
                 <Spinner size="xl" />

@@ -2,6 +2,7 @@
 import React from "react";
 import { Box, Flex, Image, Text, VStack, Button } from "@chakra-ui/react";
 import {FaUser} from "react-icons/fa";
+import headerPhoto from "../assets/header.jpg";
 
 
 
@@ -18,7 +19,7 @@ const Header: React.FC = () => {
     <Box position="relative" h="200px" w="100%">
     {/* Background Image */}
     <Image
-      src="https://aprende.guatemala.com/wp-content/uploads/2018/08/Historia-del-Palacio-Municipal-de-la-Ciudad-de-Guatemala.jpg" // reemplaza con tu imagen
+      src={headerPhoto}
       alt="Header Background"
       objectFit="cover"
       w="100%"
