@@ -44,7 +44,8 @@ export type PhotoDetail = {
   current_speed_kmh: number,
   lpNumber: string,
   lpType: string,
-  photoId: number
+  photoId: number,
+  userId: number 
 }
 
 export const PhotosService = {
@@ -82,7 +83,7 @@ export const PhotosService = {
 
     console.log('[processPhoto] Enviando parámetros:', params);
     try {
-      const { data } = await api.post(`/processed-photo/send-speed-event`, params);
+      const { data } = await api.post(`/processed-photo/process-traffic-fine`, params);
       console.log('[processPhoto] Respuesta recibida:', data);
       return data;
     } catch (error) {

@@ -33,6 +33,7 @@ const LoginScreen: React.FC = () => {
       localStorage.setItem("accessToken", response.access_token);
       localStorage.setItem("userEmail", response.email);
       localStorage.setItem("userName", response.username);
+      localStorage.setItem("userId", response.userId.toString());
 
       navigate("/photos");
     } catch (err) {

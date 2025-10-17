@@ -237,14 +237,15 @@ const PhotoScreen: React.FC = () => {
                 current_speed_kmh: Number(editMeasuredSpeed),
                 lpNumber: plateInfo.lpNumber,
                 lpType: plateInfo.lpType,
-                photoId: photoDetail.id
+                photoId: photoDetail.id,
+                userId: Number(localStorage.getItem("userId")) 
             };
             
             console.log('📤 Enviando parámetros actualizados:', params);
             console.log('🔍 Fuente de info SAT:', satVehicle ? 'Manual' : 'Automática');
             const data = await PhotosService.processPhoto(params);
             console.log(data);
-            if (data.status === "processed") {
+            if (data.photoProcessed) {
                 // Al procesar exitosamente, navegar directamente sin quitar loading
                 // (evita parpadeo de spinner → contenido → nueva pantalla)
                 navigate("/photos");

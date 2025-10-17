@@ -10,6 +10,7 @@ export interface LoginResponse {
     email: string;
     username: string;
     refresh_token: string;
+    userId: number;
 }
 
 export const refreshAccessToken = async () => {
