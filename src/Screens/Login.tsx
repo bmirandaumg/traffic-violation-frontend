@@ -5,7 +5,7 @@ import {
   Button,
   Input,
   Text,
-  Heading,
+  // Heading,
   VStack,
   Flex,
   Image,
@@ -14,6 +14,7 @@ import { useNavigate } from "react-router-dom";
 import { AuthService } from "../services/auth.service";
 import axios from "axios";
 import muniBuild from "../assets/muniBuild.jpg";
+import muniLogo from "../assets/muniLogo.jpg";
 
 const LoginScreen: React.FC = () => {
   const [username, setusername] = useState("");
@@ -60,9 +61,19 @@ const LoginScreen: React.FC = () => {
         p={8}
       >
         <Box bg="#fff" p={8} rounded="lg" shadow="md" w="sm">
-          <Heading mb={6} size="lg" textAlign="center" color="#222">
+          <Image
+  src={muniLogo}
+  alt="Logo Municipalidad"
+  width="180px"
+  height="auto"
+  objectFit="contain"
+  mx="auto"
+  mb={4}
+/>
+
+          {/* <Heading mb={6} size="lg" textAlign="center" color="#222">
             Inicio de Sesión
-          </Heading>
+          </Heading> */}
           <form onSubmit={handleSubmit}>
             <VStack gap={4} align="stretch" as="div">
               <Box>

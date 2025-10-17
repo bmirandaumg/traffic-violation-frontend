@@ -16,7 +16,7 @@ const Header: React.FC = () => {
     const userName = localStorage.getItem("userEmail") || "";
     const userCode = localStorage.getItem("userName") || "";// Reemplaza con la URL real de la foto de perfil
   return (
-    <Box position="relative" h="200px" w="100%">
+    <Box position="relative" h="140px" w="100%">
     {/* Background Image */}
     <Image
       src={headerPhoto}
