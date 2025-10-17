@@ -13,6 +13,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { AuthService } from "../services/auth.service";
 import axios from "axios";
+import muniBuild from "../assets/muniBuild.jpg";
 
 const LoginScreen: React.FC = () => {
   const [username, setusername] = useState("");
@@ -55,17 +56,17 @@ const LoginScreen: React.FC = () => {
         flex={1}
         align="center"
         justify="center"
-        bg="gray.50"
+        bg="#f3f4f6"
         p={8}
       >
-        <Box bg="black" p={8} rounded="lg" shadow="md" w="sm">
-          <Heading mb={6} size="lg" textAlign="center">
+        <Box bg="#fff" p={8} rounded="lg" shadow="md" w="sm">
+          <Heading mb={6} size="lg" textAlign="center" color="#222">
             Inicio de Sesión
           </Heading>
           <form onSubmit={handleSubmit}>
             <VStack gap={4} align="stretch" as="div">
               <Box>
-                <Text mb={1} fontWeight="medium">
+                <Text mb={1} fontWeight="medium" color="#374151">
                   Número de empleado
                 </Text>
                 <Input
@@ -74,11 +75,15 @@ const LoginScreen: React.FC = () => {
                   value={username}
                   onChange={(e) => setusername(e.target.value)}
                   required
+                  bg="#f9fafb"
+                  color="#222"
+                  borderColor="#cbd5e1"
+                  _placeholder={{ color: '#6b7280' }}
                 />
               </Box>
 
               <Box>
-                <Text mb={1} fontWeight="medium">
+                <Text mb={1} fontWeight="medium" color="#374151">
                   Contraseña
                 </Text>
                 <Input
@@ -87,10 +92,24 @@ const LoginScreen: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  bg="#f9fafb"
+                  color="#222"
+                  borderColor="#cbd5e1"
+                  _placeholder={{ color: '#6b7280' }}
                 />
               </Box>
 
-              <Button type="submit" colorScheme="blue" w="full" disabled={loading}>
+              <Button
+                type="submit"
+                bg="#16A34A"
+                color="#fff"
+                w="full"
+                _hover={{ bg: '#15803D' }}
+                disabled={loading}
+                fontWeight="bold"
+                borderRadius="md"
+                shadow="sm"
+              >
                 {loading ? "Logging in..." : "Login"}
               </Button>
               {error && <Text color="red.500">{error}</Text>}
@@ -102,11 +121,11 @@ const LoginScreen: React.FC = () => {
       {/* Columna derecha - Imagen */}
       <Flex flex={1} align="center" justify="center" bg="black">
         <Image
-          src="https://www.sicultura.gob.gt/wp-content/uploads/2019/12/MuniGua.jpg" // cambia esto por tu logo o imagen institucional
+          src={muniBuild}
           alt="Institución"
           objectFit="cover"
-          maxH="100%"
-          maxW="100%"
+          width="100%"
+          height="100%"
         />
       </Flex>
     </Flex>
