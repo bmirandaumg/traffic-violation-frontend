@@ -61,6 +61,12 @@ export const PhotosService = {
     return data;
   },
 
+  rejectPhoto: async (photoId: number, rejectionReasonId: number, userId: number) => {
+    const body = { photoId, rejectionReasonId, userId };
+    const { data } = await api.post('/processed-photo/reject-photo', body);
+    return data;
+  },
+
   updateStatus: async (id: string, status: string) => {
     const { data } = await api.patch(`/photos/${id}`, { status });
     return data;

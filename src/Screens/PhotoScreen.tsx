@@ -163,15 +163,24 @@ const PhotoScreen: React.FC = () => {
         ));
     }
 
-    const handleDeletePhoto = async (id: number) => {
+    const handleRejectPhoto = async (
+        photoId: number,
+        rejectionReasonId: number = 1,
+    ) => {
         if (!photoDetail || !photoDetail.id) return;
-        // No mostrar loading para operaciones que navegan inmediatamente
         try {
-            await PhotosService.deletePhoto(id);
-            navigate("/photos");
+            const userId = Number(localStorage.getItem("userId"));
+            const data = await PhotosService.rejectPhoto(photoId, rejectionReasonId, userId);
+            if(data.photoRejected) {
+                navigate("/photos");
+            } else {
+                setProcessErrorMsg('No se pudo descartar la foto. Intenta nuevamente.');
+                setShowProcessError(true);
+            }
         } catch (error) {
-            console.error("Error deleting photo:", error);
-            // Solo mostrar loading si hay error y nos quedamos en la pantalla
+            console.error("Error rejecting photo:", error);
+            setProcessErrorMsg('No hay conexión con el servicio o ocurrió un error.');
+            setShowProcessError(true);
         }
     };
 
@@ -490,7 +499,7 @@ const PhotoScreen: React.FC = () => {
                             <Button 
                                 color="white"
                                 variant='outline' 
-                                onClick={() => handleDeletePhoto(photoDetail!.id)}
+                                onClickCapture={() => handleRejectPhoto(photoDetail!.id)}
                                 _hover={{ bg: '#c82333' }} 
                                 bg='#dc3545'
                                 size="sm"
