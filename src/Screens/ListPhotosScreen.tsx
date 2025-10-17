@@ -245,8 +245,11 @@ const PhotosScreen: React.FC = () => {
                             <Box key={index} borderWidth="1px" borderRadius="lg" overflow="hidden" marginTop='8' onClick={() => onPressPhoto(photo)}>
                                 <Image 
                                     src={`data:image/png;base64,${photo.photo_base64}`}
-
-                                alt={`Photo ${index + 1}`} boxSize="200px" objectFit="cover" />
+                                    alt={`Photo ${index + 1}`} 
+                                    width="100%"
+                                    height="200px"
+                                    objectFit="cover"
+                                />
                                 <Box p={4}>
                                     <Text fontSize="sm" color="gray.500">
                                         {photo.photo_date}
