@@ -4,6 +4,7 @@ import { Box, Grid, Image, Spinner, Text, Button } from '@chakra-ui/react';
 import { CruiseService, type Cruise } from '@/services/cruise.service';
 import { PhotosService, type Photo } from '@/services/photos.service';
 import { useNavigate } from "react-router-dom";
+import { toaster } from '@/components/ui/toaster';
 
 // Función para validar que la fecha esté completa
 const isValidCompleteDate = (dateString: string): boolean => {
@@ -177,7 +178,20 @@ const PhotosScreen: React.FC = () => {
         navigate("/photo" , { state: { photo } });
         } catch (error) {
             console.error("Error bloqueando la foto:", error);
-            // Puedes mostrar un mensaje de error si lo deseas
+            const err = error as { response?: { data?: { message?: string } } };
+            const message = err?.response?.data?.message ?? "No se pudo bloquear la foto. Intenta nuevamente.";
+            toaster.create({
+                title: "Foto no disponible",
+                description: message,
+                type: "warning",
+                duration: 3000,
+            });
+
+            if (appliedCruise && appliedDate && isValidCompleteDate(appliedDate)) {
+                await fetchPhotos(parseInt(appliedCruise), appliedDate, page);
+            } else if (selectedCruise && date && isValidCompleteDate(date)) {
+                await fetchPhotos(parseInt(selectedCruise), date, page);
+            }
         }
     }
 

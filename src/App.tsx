@@ -4,6 +4,7 @@ import LoginScreen from "./Screens/Login";
 import ListPhotosScreen from "./Screens/ListPhotosScreen";
 import PhotoScreen from "./Screens/PhotoScreen";
 import Header from "./components/Header";
+import { Toaster } from "@/components/ui/toaster";
 
 function App() {
   const location = useLocation();
@@ -31,6 +32,7 @@ function App() {
           }
         />
       </Routes>
+      <Toaster />
     </div>
   );
 }
