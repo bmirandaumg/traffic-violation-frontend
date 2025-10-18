@@ -44,6 +44,8 @@ const PhotosScreen: React.FC = () => {
     const [cruises, setCruises] = useState<Cruise[]>([]);
     const [selectedCruise, setSelectedCruise] = useState<string>("");
     const [date, setDate] = useState<string>("");
+    const [appliedCruise, setAppliedCruise] = useState<string>("");
+    const [appliedDate, setAppliedDate] = useState<string>("");
 
     const limitPhotosPerPage = 10;
     // Inicializar con loading: false si hay datos en localStorage (evita parpadeo)
@@ -87,6 +89,8 @@ const PhotosScreen: React.FC = () => {
             // Guardar filtros en localStorage para persistencia
             localStorage.setItem('photos_filter_cruise', cruise_id.toString());
             localStorage.setItem('photos_filter_date', date);
+            setAppliedCruise(cruise_id.toString());
+            setAppliedDate(date);
         } catch (error) {
             console.error("Error fetching photos:", error);
         } finally {
@@ -122,9 +126,11 @@ const PhotosScreen: React.FC = () => {
         
         if (savedCruise) {
             setSelectedCruise(savedCruise);
+            setAppliedCruise(savedCruise);
         }
         if (savedDate) {
             setDate(savedDate);
+            setAppliedDate(savedDate);
         }
     }, []);
 
@@ -151,15 +157,17 @@ const PhotosScreen: React.FC = () => {
 
     // Recargar fotos al cambiar de página
     useEffect(() => {
-        if (selectedCruise && date && isValidCompleteDate(date)) {
-            if (isPaginating) {
-                fetchPhotos(parseInt(selectedCruise), date, page);
-            } else {
-                localStorage.setItem('photos_current_page', '1');
-            }
+        if (!isPaginating) {
+            return;
         }
+
+        if (appliedCruise && appliedDate && isValidCompleteDate(appliedDate)) {
+            fetchPhotos(parseInt(appliedCruise), appliedDate, page);
+        }
+
+        setIsPaginating(false);
         // eslint-disable-next-line
-    }, [page, isPaginating]);
+    }, [page, isPaginating, appliedCruise, appliedDate]);
 
 
     const onPressPhoto = async (photo: Photo) => {
