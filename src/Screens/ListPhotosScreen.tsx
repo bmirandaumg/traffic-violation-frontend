@@ -234,6 +234,8 @@ const PhotosScreen: React.FC = () => {
                             _hover={{ bg: "#4cae4c" }}
                             onClick={() => {
                                 if (selectedCruise && date) {
+                                    setPage(1);
+                                    localStorage.setItem('photos_current_page', '1');
                                     fetchPhotos(parseInt(selectedCruise), date, 1);
                                 }
                             }}
