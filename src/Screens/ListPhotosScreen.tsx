@@ -65,6 +65,14 @@ const PhotosScreen: React.FC = () => {
             setNoPhotosMessage(""); // Limpiar mensaje anterior
             
             const data = await PhotosService.getAll(cruise_id, date, page);
+            
+            if(Array.isArray(data.photos) && data.photos.length === 0 && page > 1) {
+
+                setPage(page - 1);
+                localStorage.setItem('photos_current_page', (page - 1).toString());
+                return;
+            }
+
             // data.photos: array de fotos, data.total: total de fotos
             setPhotos(data.photos);
             setTotal(data.total);
