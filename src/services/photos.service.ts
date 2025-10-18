@@ -48,13 +48,20 @@ export type PhotoDetail = {
   userId: number 
 }
 
-export const PhotosService = {
-  getAll: async (cruise_id: number, date: string, page: number): Promise<Photo[]> => {
-    const params = `photo_date=${date}&id_cruise=${cruise_id}&page=${page}&limit=10`;
-    const { data } = await api.get(`/photos?${params}`);
+type PhotosPaginatedResponse = {
+  photos: Photo[];
+  total: number;
+};
 
-    return data[0];
-  },
+export const PhotosService = {
+  getAll: async (cruise_id: number, date: string, page: number): Promise<PhotosPaginatedResponse> => {
+  const params = `photo_date=${date}&id_cruise=${cruise_id}&page=${page}&limit=10`;
+  const { data } = await api.get(`/photos?${params}`);
+  return {
+    photos: data[0],
+    total: data[1]
+  };
+},
 
   rejectPhoto: async (photoId: number, rejectionReasonId: number, userId: number) => {
     const body = { photoId, rejectionReasonId, userId };

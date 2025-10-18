@@ -36,9 +36,16 @@ const isValidCompleteDate = (dateString: string): boolean => {
 
 const PhotosScreen: React.FC = () => {
     const [photos, setPhotos] = useState<Photo[]>([]);
+    const [total, setTotal] = useState<number>(0);
+    const [page, setPage] = useState<number>(() => {
+    const savedPage = localStorage.getItem('photos_current_page');
+    return savedPage ? parseInt(savedPage) : 1;
+    });
     const [cruises, setCruises] = useState<Cruise[]>([]);
     const [selectedCruise, setSelectedCruise] = useState<string>("");
     const [date, setDate] = useState<string>("");
+
+    const limitPhotosPerPage = 10;
     // Inicializar con loading: false si hay datos en localStorage (evita parpadeo)
     const [loading, setLoading] = useState<boolean>(() => {
         const savedCruise = localStorage.getItem('photos_filter_cruise');
@@ -58,18 +65,14 @@ const PhotosScreen: React.FC = () => {
             setNoPhotosMessage(""); // Limpiar mensaje anterior
             
             const data = await PhotosService.getAll(cruise_id, date, page);
-            console.log(data);
-            
-            // Verificar SOLO si es array vacío (manteniendo lógica original)
-            if (Array.isArray(data) && data.length === 0) {
-                setPhotos([]);
+            // data.photos: array de fotos, data.total: total de fotos
+            setPhotos(data.photos);
+            setTotal(data.total);
+            if (Array.isArray(data.photos) && data.photos.length === 0) {
                 setNoPhotosMessage(`No se encontraron fotos para la fecha ${date} en el crucero seleccionado`);
             } else {
-                // Lógica original intacta
-                setPhotos(data);
                 setNoPhotosMessage("");
             }
-            
             // Guardar filtros en localStorage para persistencia
             localStorage.setItem('photos_filter_cruise', cruise_id.toString());
             localStorage.setItem('photos_filter_date', date);
@@ -117,10 +120,18 @@ const PhotosScreen: React.FC = () => {
             // Usar setTimeout para evitar conflictos con el loading state
             // showLoading: false para evitar parpadeo en la auto-búsqueda
             setTimeout(() => {
-                fetchPhotos(parseInt(selectedCruise), date, 1, false);
+                fetchPhotos(parseInt(selectedCruise), date, page, false);
             }, 100);
         }
-    }, [selectedCruise, date, cruises, hasAutoSearched]);
+    }, [selectedCruise, date, cruises, hasAutoSearched, page]);
+
+    // Recargar fotos al cambiar de página
+    useEffect(() => {
+        if (selectedCruise && date && isValidCompleteDate(date)) {
+            fetchPhotos(parseInt(selectedCruise), date, page);
+        }
+        // eslint-disable-next-line
+    }, [page]);
 
 
     const onPressPhoto = async (photo: Photo) => {
@@ -152,7 +163,10 @@ const PhotosScreen: React.FC = () => {
                             {cruises.length > 0 ? (
                                 <select 
                                     value={selectedCruise} 
-                                    onChange={(e) => setSelectedCruise(e.target.value)}
+                                    onChange={(e) => {
+                                        setPage(1);
+                                        setSelectedCruise(e.target.value);
+                                    }}
                                     style={{
                                         width: "280px",
                                         height: "40px",
@@ -186,7 +200,10 @@ const PhotosScreen: React.FC = () => {
                                 type="date" 
                                 placeholder="Fecha"
                                 value={date}
-                                onChange={(e) => setDate(e.target.value)}
+                                onChange={(e) => {
+                                    setPage(1);
+                                    setDate(e.target.value);
+                                }}
                                 style={{
                                     width: "180px",
                                     height: "40px",
@@ -240,27 +257,56 @@ const PhotosScreen: React.FC = () => {
                         </Box>
                     )}
 
-                    {photos && <Grid templateColumns="repeat(auto-fill, minmax(200px, 1fr))" gap={6}>
-                        {photos.map((photo, index) => (
-                            <Box key={index} borderWidth="1px" borderRadius="lg" overflow="hidden" marginTop='8' onClick={() => onPressPhoto(photo)}>
-                                <Image 
-                                    src={`data:image/png;base64,${photo.photo_base64}`}
-                                    alt={`Photo ${index + 1}`} 
-                                    width="100%"
-                                    height="200px"
-                                    objectFit="cover"
-                                />
-                                <Box p={4}>
-                                    <Text fontSize="sm" color="gray.500">
-                                        {photo.photo_date}
-                                    </Text>
-                                    <Text fontSize="sm" color="gray.500">
-                                        Status: {photo.photo_status}</Text>
+                    {photos && <>
+                        <Grid templateColumns="repeat(auto-fill, minmax(200px, 1fr))" gap={6}>
+                            {photos.map((photo, index) => (
+                                <Box key={index} borderWidth="1px" borderRadius="lg" overflow="hidden" marginTop='8' onClick={() => onPressPhoto(photo)}>
+                                    <Image 
+                                        src={`data:image/png;base64,${photo.photo_base64}`}
+                                        alt={`Photo ${index + 1}`} 
+                                        width="100%"
+                                        height="200px"
+                                        objectFit="cover"
+                                    />
+                                    <Box p={4}>
+                                        <Text fontSize="sm" color="gray.500">
+                                            {photo.photo_date}
+                                        </Text>
+                                        <Text fontSize="sm" color="gray.500">
+                                            Status: {photo.photo_status}</Text>
+                                    </Box>
                                 </Box>
-                            </Box>
-                        ))}
-                    </Grid>
-                    }
+                            ))}
+                        </Grid>
+                        {/* Paginación */}
+                        <Box display="flex" justifyContent="center" alignItems="center" mt={6} gap={2}>
+                            <Button
+                                onClick={() => {
+                                const newPage = Math.max(page - 1, 1);
+                                setPage(newPage);
+                                localStorage.setItem('photos_current_page', newPage.toString());
+                                }}
+                                disabled={page === 1}
+                                size="sm"
+                            >
+                                Anterior
+                            </Button>
+                            <Text fontSize="md" color={"black"}>
+                                Página {page} de {Math.max(1, Math.ceil(total / limitPhotosPerPage))}
+                            </Text>
+                            <Button
+                                onClick={() => {
+                                const newPage = page + 1;
+                                setPage(newPage);
+                                localStorage.setItem('photos_current_page', newPage.toString());
+                                }}
+                                disabled={page >= Math.ceil(total / limitPhotosPerPage)}
+                                size="sm"
+                            >
+                                Siguiente
+                            </Button>
+                        </Box>
+                    </>}
                 </>
             )}
         </Box>
