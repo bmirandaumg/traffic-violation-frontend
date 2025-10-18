@@ -47,6 +47,7 @@ const PhotosScreen: React.FC = () => {
 
     const limitPhotosPerPage = 10;
     // Inicializar con loading: false si hay datos en localStorage (evita parpadeo)
+
     const [loading, setLoading] = useState<boolean>(() => {
         const savedCruise = localStorage.getItem('photos_filter_cruise');
         const savedDate = localStorage.getItem('photos_filter_date');
@@ -54,6 +55,8 @@ const PhotosScreen: React.FC = () => {
         return !(savedCruise && savedDate && isValidCompleteDate(savedDate));
     });
     const [hasAutoSearched, setHasAutoSearched] = useState<boolean>(false);
+    const [returningFromDetail, setReturningFromDetail] = useState<boolean>(() => localStorage.getItem('photos_returning_from_detail') === "1");
+    const [isPaginating, setIsPaginating] = useState<boolean>(false);
     const [noPhotosMessage, setNoPhotosMessage] = useState<string>("");
     const navigate = useNavigate();
 
@@ -108,6 +111,10 @@ const PhotosScreen: React.FC = () => {
         fetchCruises();
     }, []);
 
+    useEffect(() => {
+        localStorage.removeItem('photos_returning_from_detail');
+    }, []);
+
     // Restaurar filtros desde localStorage al cargar la pantalla
     useEffect(() => {
         const savedCruise = localStorage.getItem('photos_filter_cruise');
@@ -123,7 +130,15 @@ const PhotosScreen: React.FC = () => {
 
     // Búsqueda automática cuando se restauran los filtros y ya están los cruceros cargados (solo una vez)
     useEffect(() => {
-        if (selectedCruise && date && cruises.length > 0 && !hasAutoSearched && isValidCompleteDate(date)) {
+        if (
+            returningFromDetail &&
+            selectedCruise &&
+            date &&
+            cruises.length > 0 &&
+            !hasAutoSearched &&
+            isValidCompleteDate(date)
+        ) {
+            setReturningFromDetail(false);
             setHasAutoSearched(true);
             // Usar setTimeout para evitar conflictos con el loading state
             // showLoading: false para evitar parpadeo en la auto-búsqueda
@@ -131,20 +146,26 @@ const PhotosScreen: React.FC = () => {
                 fetchPhotos(parseInt(selectedCruise), date, page, false);
             }, 100);
         }
-    }, [selectedCruise, date, cruises, hasAutoSearched, page]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedCruise, date, cruises, hasAutoSearched, returningFromDetail]);
 
     // Recargar fotos al cambiar de página
     useEffect(() => {
         if (selectedCruise && date && isValidCompleteDate(date)) {
-            fetchPhotos(parseInt(selectedCruise), date, page);
+            if (isPaginating) {
+                fetchPhotos(parseInt(selectedCruise), date, page);
+            } else {
+                localStorage.setItem('photos_current_page', '1');
+            }
         }
         // eslint-disable-next-line
-    }, [page]);
+    }, [page, isPaginating]);
 
 
     const onPressPhoto = async (photo: Photo) => {
         try {
         await PhotosService.blockPhoto(photo.id);
+        localStorage.setItem('photos_returning_from_detail', "1");
         navigate("/photo" , { state: { photo } });
         } catch (error) {
             console.error("Error bloqueando la foto:", error);
@@ -172,8 +193,10 @@ const PhotosScreen: React.FC = () => {
                                 <select 
                                     value={selectedCruise} 
                                     onChange={(e) => {
-                                        setPage(1);
+                                        setIsPaginating(false);
                                         setSelectedCruise(e.target.value);
+                                        setHasAutoSearched(false);
+                                        setReturningFromDetail(false);
                                     }}
                                     style={{
                                         width: "280px",
@@ -209,8 +232,10 @@ const PhotosScreen: React.FC = () => {
                                 placeholder="Fecha"
                                 value={date}
                                 onChange={(e) => {
-                                    setPage(1);
+                                    setIsPaginating(false);
                                     setDate(e.target.value);
+                                    setHasAutoSearched(false);
+                                    setReturningFromDetail(false);
                                 }}
                                 style={{
                                     width: "180px",
@@ -291,11 +316,12 @@ const PhotosScreen: React.FC = () => {
                         {/* Paginación */}
                         <Box display="flex" justifyContent="center" alignItems="center" mt={6} gap={2}>
                             <Button
-                                onClick={() => {
-                                const newPage = Math.max(page - 1, 1);
+                            onClick={() => {
+                               const newPage = Math.max(page - 1, 1);
                                 setPage(newPage);
                                 localStorage.setItem('photos_current_page', newPage.toString());
-                                }}
+                                setIsPaginating(true);
+                            }}
                                 disabled={page === 1}
                                 size="sm"
                             >
@@ -305,11 +331,12 @@ const PhotosScreen: React.FC = () => {
                                 Página {page} de {Math.max(1, Math.ceil(total / limitPhotosPerPage))}
                             </Text>
                             <Button
-                                onClick={() => {
-                                const newPage = page + 1;
+                            onClick={() => {
+                               const newPage = page + 1;
                                 setPage(newPage);
                                 localStorage.setItem('photos_current_page', newPage.toString());
-                                }}
+                                setIsPaginating(true);
+                            }}
                                 disabled={page >= Math.ceil(total / limitPhotosPerPage)}
                                 size="sm"
                             >
