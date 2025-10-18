@@ -8,6 +8,7 @@ import { CruiseService, type Cruise } from '@/services/cruise.service';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Plates } from '@/enums/plates.enum';
+import { toaster } from '@/components/ui/toaster';
 
 const PhotoScreen: React.FC = () => {
     // Estado para mostrar alerta de error de conexión
@@ -172,6 +173,11 @@ const PhotoScreen: React.FC = () => {
             const userId = Number(localStorage.getItem("userId"));
             const data = await PhotosService.rejectPhoto(photoId, rejectionReasonId, userId);
             if(data.photoRejected) {
+                toaster.create({
+                    title: "Foto descartada correctamente",
+                    type: "success",
+                    duration: 3000,
+                });
                 navigate("/photos");
             } else {
                 setProcessErrorMsg('No se pudo descartar la foto. Intenta nuevamente.');
@@ -255,6 +261,11 @@ const PhotoScreen: React.FC = () => {
             const data = await PhotosService.processPhoto(params);
             console.log(data);
             if (data.photoProcessed) {
+                toaster.create({
+                    title: "Multa procesada exitosamente",
+                    type: "success",
+                    duration: 3000,
+                });
                 // Al procesar exitosamente, navegar directamente sin quitar loading
                 // (evita parpadeo de spinner → contenido → nueva pantalla)
                 navigate("/photos");
