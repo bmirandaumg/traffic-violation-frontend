@@ -1,6 +1,7 @@
 //Screen basic whit a list of photos
-import React, { useEffect, useState } from 'react';
-import { Box, Spinner, Text, Image, Button, CloseButton } from '@chakra-ui/react';
+import React, { useEffect, useMemo, useState } from 'react';
+import type { ChangeEvent } from 'react';
+import { Box, Spinner, Text, Image, Button, CloseButton, DialogRoot, DialogBackdrop, DialogPositioner, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter, DialogCloseTrigger, NativeSelectRoot, NativeSelectField, NativeSelectIndicator, } from '@chakra-ui/react';
 
 import { PhotosService, type PhotoDetail, type Vehicle } from '@/services/photos.service';
 import { VehicleService } from '@/services/vehicle.service';
@@ -9,6 +10,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Plates } from '@/enums/plates.enum';
 import { toaster } from '@/components/ui/toaster';
+import { RejectionReasonService, type RejectionReason } from '@/services/reject.service';
 
 const PhotoScreen: React.FC = () => {
     // Estado para mostrar alerta de error de conexión
@@ -35,6 +37,48 @@ const PhotoScreen: React.FC = () => {
     const navigate = useNavigate();
 
     const [cruises, setCruises] = useState<Cruise[]>([]);
+    const enableRejectReason = useMemo(() => (import.meta.env.VITE_ENABLE_REQUEST_REJECT_REASON ?? 'false') === 'true', []);
+    const [isRejectModalOpen, setRejectModalOpen] = useState<boolean>(false);
+    const [rejectionReasons, setRejectionReasons] = useState<RejectionReason[]>([]);
+    const [selectedRejectionReasonId, setSelectedRejectionReasonId] = useState<number | null>(null);
+    const [rejectModalError, setRejectModalError] = useState<string>('');
+    const [rejectingPhotoId, setRejectingPhotoId] = useState<number | null>(null);
+    const [isSubmittingReject, setIsSubmittingReject] = useState<boolean>(false);
+    const DEFAULT_REJECTION_REASON_ID = 1;
+
+    const closeRejectModal = () => {
+        setRejectModalError('');
+        setRejectingPhotoId(null);
+        setIsSubmittingReject(false);
+        setRejectModalOpen(false);
+    };
+
+    const openRejectModal = () => {
+        setRejectModalError('');
+        setRejectModalOpen(true);
+    };
+
+    useEffect(() => {
+        if (!enableRejectReason || !isRejectModalOpen) return;
+        if (rejectionReasons.length > 0) return;
+
+        const fetchRejectionReasons = async () => {
+            try {
+                const data = await RejectionReasonService.get();
+                setRejectionReasons(data);
+                setSelectedRejectionReasonId(data[0]?.id ?? null);
+                setRejectModalError('');
+                if (data.length === 0) {
+                    setRejectModalError('No hay razones de rechazo disponibles.');
+                }
+            } catch (error) {
+                console.error("Error obteniendo razones de rechazo:", error);
+                setRejectModalError('No se pudieron cargar las razones de rechazo.');
+            }
+        };
+
+        void fetchRejectionReasons();
+    }, [enableRejectReason, isRejectModalOpen, rejectionReasons.length]);
 
     useEffect(() => {
         const fetchPhotoDetail = async () => {
@@ -164,30 +208,67 @@ const PhotoScreen: React.FC = () => {
         ));
     }
 
-    const handleRejectPhoto = async (
-        photoId: number,
-        rejectionReasonId: number = 1,
-    ) => {
+    const performRejectPhoto = async (photoId: number, rejectionReasonId: number) => {
         if (!photoDetail || !photoDetail.id) return;
+        setIsSubmittingReject(true);
+        setProcessErrorMsg('');
+        setShowProcessError(false);
         try {
             const userId = Number(localStorage.getItem("userId"));
             const data = await PhotosService.rejectPhoto(photoId, rejectionReasonId, userId);
-            if(data.photoRejected) {
+            if (data.photoRejected) {
                 toaster.create({
                     title: "Foto descartada correctamente",
                     type: "success",
                     duration: 3000,
                 });
+                if (enableRejectReason) {
+                    closeRejectModal();
+                }
                 navigate("/photos");
             } else {
-                setProcessErrorMsg('No se pudo descartar la foto. Intenta nuevamente.');
+                const message = 'No se pudo descartar la foto. Intenta nuevamente.';
+                setProcessErrorMsg(message);
                 setShowProcessError(true);
+                if (enableRejectReason) {
+                    setRejectModalError(message);
+                }
             }
         } catch (error) {
             console.error("Error rejecting photo:", error);
-            setProcessErrorMsg('No hay conexión con el servicio o ocurrió un error.');
+            const message = 'No hay conexión con el servicio o ocurrió un error.';
+            setProcessErrorMsg(message);
             setShowProcessError(true);
+            if (enableRejectReason) {
+                setRejectModalError(message);
+            }
+        } finally {
+            setIsSubmittingReject(false);
         }
+    };
+
+    const initiateRejectPhoto = (photoId: number, fallbackReasonId: number = DEFAULT_REJECTION_REASON_ID) => {
+        if (!photoDetail || !photoDetail.id) return;
+
+        if (!enableRejectReason) {
+            void performRejectPhoto(photoId, fallbackReasonId);
+            return;
+        }
+
+        setRejectModalError('');
+        setRejectingPhotoId(photoId);
+        setSelectedRejectionReasonId(rejectionReasons[0]?.id ?? null);
+        openRejectModal();
+    };
+
+    const handleRejectConfirm = async () => {
+        if (rejectingPhotoId === null) return;
+        if (!selectedRejectionReasonId) {
+            setRejectModalError('Seleccione una razón de rechazo.');
+            return;
+        }
+        setRejectModalError('');
+        await performRejectPhoto(rejectingPhotoId, selectedRejectionReasonId);
     };
 
     const plateOptions = Object.values(Plates).map(value => ({
@@ -510,7 +591,7 @@ const PhotoScreen: React.FC = () => {
                             <Button 
                                 color="white"
                                 variant='outline' 
-                                onClickCapture={() => handleRejectPhoto(photoDetail!.id)}
+                                onClick={() => initiateRejectPhoto(photoDetail!.id)}
                                 _hover={{ bg: '#c82333' }} 
                                 bg='#dc3545'
                                 size="sm"
@@ -745,6 +826,116 @@ const PhotoScreen: React.FC = () => {
                         )}
                     </Box>
                 </Box>
+            )}
+            {enableRejectReason && (
+                <DialogRoot
+                    open={isRejectModalOpen}
+                    onOpenChange={(details) => {
+                        if (!details.open) {
+                            closeRejectModal();
+                        }
+                    }}
+                >
+                    <DialogBackdrop bg="blackAlpha.400" />
+                    <DialogPositioner>
+                        <DialogContent
+                            bg="white"
+                            color="black"
+                            borderRadius="lg"
+                            boxShadow="xl"
+                            maxW="400px"
+                            w="90%"
+                            p={0}
+                            overflow="hidden"
+                        >
+                            <DialogCloseTrigger color="gray.500" _hover={{ color: 'gray.700' }} />
+                            <DialogHeader px={6} pt={6} pb={0}>
+                                <DialogTitle fontSize="lg" fontWeight="bold">
+                                    Selecciona una razón
+                                </DialogTitle>
+                            </DialogHeader>
+                            <DialogBody px={6} py={4}>
+                                <Box display="flex" flexDirection="column" gap={4}>
+                                    <Box display="flex" flexDirection="column" gap={2}>
+                                        <label
+                                            htmlFor="reject-reason-select"
+                                            style={{
+                                                fontWeight: 500,
+                                                fontSize: '0.875rem',
+                                                color: '#1f2937',
+                                            }}
+                                        >
+                                            Razón de rechazo
+                                        </label>
+                                        <NativeSelectRoot
+                                            width="100%"
+                                            borderRadius="6px"
+                                            border="1px solid"
+                                            borderColor="gray.300"
+                                            bg="white"
+                                            color="gray.800"
+                                            _focusWithin={{ borderColor: 'blue.400', boxShadow: '0 0 0 1px #60a5fa' }}
+                                        >
+                                            <NativeSelectField
+                                                id="reject-reason-select"
+                                                value={selectedRejectionReasonId !== null ? String(selectedRejectionReasonId) : ''}
+                                                onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+                                                    setRejectModalError('');
+                                                    const value = event.target.value;
+                                                    setSelectedRejectionReasonId(value ? Number(value) : null);
+                                                }}
+                                                placeholder={rejectionReasons.length === 0 ? 'Cargando razones...' : undefined}
+                                                color="gray.900"
+                                                bg="transparent"
+                                            >
+                                                {rejectionReasons.length === 0 ? (
+                                                    <option value="">Cargando razones...</option>
+                                                ) : (
+                                                    rejectionReasons.map((reason) => (
+                                                        <option key={reason.id} value={reason.id}>
+                                                            {reason.description}
+                                                        </option>
+                                                    ))
+                                                )}
+                                            </NativeSelectField>
+                                            <NativeSelectIndicator color="gray.500" />
+                                        </NativeSelectRoot>
+                                    </Box>
+                                    {rejectModalError && (
+                                        <Text color="red.500" fontSize="sm">
+                                            {rejectModalError}
+                                        </Text>
+                                    )}
+                                </Box>
+                            </DialogBody>
+                            <DialogFooter
+                                display="flex"
+                                gap={2}
+                                justifyContent="flex-end"
+                                px={6}
+                                pb={6}
+                                pt={2}
+                            >
+                                <Button
+                                    variant="ghost"
+                                    onClick={closeRejectModal}
+                                    color="gray.600"
+                                    _hover={{ bg: 'gray.100' }}
+                                >
+                                    Cancelar
+                                </Button>
+                                <Button
+                                    colorScheme="red"
+                                    onClick={handleRejectConfirm}
+                                    loading={isSubmittingReject}
+                                    disabled={rejectionReasons.length === 0 || isSubmittingReject}
+                                >
+                                    Confirmar
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </DialogPositioner>
+                </DialogRoot>
             )}
         </Box>
     );

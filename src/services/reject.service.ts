@@ -2,7 +2,7 @@ import api from "../api/api";
 
 export interface RejectionReason {
     id: number;
-    reason: string;
+    description: string;
 }
 
 export const RejectionReasonService = {

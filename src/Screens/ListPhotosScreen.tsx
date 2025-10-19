@@ -73,8 +73,8 @@ const PhotosScreen: React.FC = () => {
             const data = await PhotosService.getAll(cruise_id, date, page);
             
             if(Array.isArray(data.photos) && data.photos.length === 0 && page > 1) {
-
                 setPage(page - 1);
+                setIsPaginating(true);
                 localStorage.setItem('photos_current_page', (page - 1).toString());
                 return;
             }

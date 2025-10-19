@@ -63,6 +63,8 @@ export const PhotosService = {
   };
 },
 
+
+
   rejectPhoto: async (photoId: number, rejectionReasonId: number, userId: number) => {
     const body = { photoId, rejectionReasonId, userId };
     const { data } = await api.post('/processed-photo/reject-photo', body);
