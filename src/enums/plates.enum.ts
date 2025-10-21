@@ -7,11 +7,6 @@ export const Plates = {
     U: "U",
     O: "O",
     E: "E",
-    CD: "CD",
-    DT: "DT",
-    TC: "TC",
-    CC: "CC",
-    MI: "MI"
 } as const;
 
 export type PlateType = typeof Plates[keyof typeof Plates];
