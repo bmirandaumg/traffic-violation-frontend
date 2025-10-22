@@ -13,8 +13,8 @@ import {
 import { useNavigate } from "react-router-dom";
 import { AuthService } from "../services/auth.service";
 import axios from "axios";
-import muniBuild from "../assets/muniBuild.jpg";
-import muniLogo from "../assets/muniLogo.jpg";
+import muniBuild from "../assets/MuniBuild.jpg";
+import muniLogo from "../assets/MuniLogo.jpg";
 
 const LoginScreen: React.FC = () => {
   const [username, setusername] = useState("");
