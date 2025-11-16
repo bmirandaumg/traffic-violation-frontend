@@ -78,9 +78,14 @@ const PhotosScreen: React.FC = () => {
                 localStorage.setItem('photos_current_page', (page - 1).toString());
                 return;
             }
-
             // data.photos: array de fotos, data.total: total de fotos
-            setPhotos(data.photos);
+            const normalizedPhotos = Array.isArray(data.photos)
+                    ? data.photos.map((photo) => ({
+                    ...photo,
+                    photo_date: photo.photo_date?.split(/[ T]/)[0] ?? '',
+                }))
+            : [];
+            setPhotos(normalizedPhotos);
             setTotal(data.total);
             if (Array.isArray(data.photos) && data.photos.length === 0) {
                 setNoPhotosMessage(`No se encontraron fotos para la fecha ${date} en el crucero seleccionado`);
@@ -327,10 +332,10 @@ const PhotosScreen: React.FC = () => {
                                     />
                                     <Box p={4}>
                                         <Text fontSize="sm" color="gray.500">
-                                            {photo.photo_date}
+                                            Fecha: {photo.photo_date}
                                         </Text>
                                         <Text fontSize="sm" color="gray.500">
-                                            Status: {photo.photo_status}</Text>
+                                            Estatus: {photo.photo_status}</Text>
                                     </Box>
                                 </Box>
                             ))}
